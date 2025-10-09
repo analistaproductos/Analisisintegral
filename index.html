@@ -28,6 +28,16 @@
       doc.setFontSize(9); doc.setTextColor(0,51,102); doc.text('Confidencial — Uso interno', pageW/2, pageH-10, {align:'center'});
     }
     function drawWatermark(doc, pageW, pageH){
+      // Implementación segura sin dependencias de GState/opacity para evitar errores en jsPDF
+      const prevColor = doc.getTextColor();
+      doc.setFontSize(48);
+      // Color muy claro para simular watermark
+      doc.setTextColor(180, 196, 210);
+      // Texto diagonal centrado
+      doc.text(ORG.watermark, pageW/2, pageH/2, {angle: -25, align:'center'});
+      // Restaurar color
+      if(prevColor) doc.setTextColor(prevColor);
+    }{
       doc.saveGraphicsState();
       if(doc.setGState){ doc.setGState(new doc.GState({ opacity: 0.06 })); }
       doc.setFontSize(52); doc.setTextColor(0,51,102);
