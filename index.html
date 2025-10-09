@@ -103,13 +103,14 @@
     /* Accesibilidad */
     :focus-visible{outline:3px solid var(--ring);outline-offset:3px}
   </style>
+  <link rel="icon" type="image/png" href="https://cotrafasocial.com/wp-content/uploads/2023/09/logo-cotrafasocial.png"/>
 </head>
 <body>
   <!-- Barra superior -->
   <header class="topbar">
     <div class="container nav">
       <div class="brand" aria-label="Cotrafa Social">
-        <img src="LOGO.jpg" alt="Logo Cotrafa Social" />
+        <img src="https://cotrafasocial.com/wp-content/uploads/2023/09/logo-cotrafasocial.png" alt="Logo Cotrafa Social" />
         <span class="logotxt">Cotrafa Social</span>
       </div>
       <div class="actions">
@@ -165,7 +166,7 @@
   <footer class="container">
     <div class="panel foot">
       <div class="brand">
-        <img src="LOGO.jpg" alt="Logo Cotrafa Social" />
+        <img src="https://cotrafasocial.com/wp-content/uploads/2023/09/logo-cotrafasocial.png" alt="Logo Cotrafa Social" />
         <div>
           <div class="logotxt">Cotrafa Social</div>
           <div class="small">Dashboard comercial — versión ejecutiva y accesible</div>
@@ -482,7 +483,7 @@
       try{
         if(!window.jspdf || !window.jspdf.jsPDF){ alert('No se pudo cargar jsPDF.'); return; }
         const { jsPDF } = window.jspdf; const doc = new jsPDF('p','mm','a4');
-        let logoDataURL = null; try{ const r = await fetch('LOGO.jpg'); const b = await r.blob(); logoDataURL = await new Promise(res=>{ const fr=new FileReader(); fr.onloadend=()=>res(fr.result); fr.onerror=()=>res(null); fr.readAsDataURL(b); }); }catch(e){ console.warn('Logo no disponible para PDF'); }
+        let logoDataURL = null; try{ const r = await fetch('https://cotrafasocial.com/wp-content/uploads/2023/09/logo-cotrafasocial.png'); const b = await r.blob(); logoDataURL = await new Promise(res=>{ const fr=new FileReader(); fr.onloadend=()=>res(fr.result); fr.onerror=()=>res(null); fr.readAsDataURL(b); }); }catch(e){ console.warn('Logo no disponible para PDF'); }
         const now = new Date().toLocaleString('es-CO');
         // Encabezado
         doc.setFillColor(0,47,90); doc.rect(0,0,210,22,'F'); if(logoDataURL) doc.addImage(logoDataURL,'PNG',10,3,16,16);
