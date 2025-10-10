@@ -71,7 +71,7 @@
         <h2 id="tituloCarga">Cargar datos</h2>
         <div class="file">
           <input type="file" id="csvFile" accept=".csv" aria-label="Seleccionar archivo CSV"/>
-          <div class="meta">CSV con ; o , en UTF-8.</div>
+          <div class="meta">CSV con ; o , en UTF‑8.</div>
         </div>
         <div class="chips" id="chips"></div>
       </div>
@@ -105,7 +105,7 @@
   <script>
   // ====== Marca & Organización ======
   const BRAND = { logoURL:'https://cotrafasocial.com/wp-content/uploads/2023/09/logo-cotrafasocial.png', logoDataURI:null };
-  const ORG = { nombre:'Cotrafa Social', nit:'NIT 811.017.024-3', email:'info@cotrafasocial.com.co', telefono:'+57 (604) 456 70 00', web:'https://www.cotrafasocial.com.co', watermark:'COTRAFA SOCIAL — CONFIDENCIAL' };
+  const ORG = { nombre:'Cotrafa Social', nit:'NIT 000.000.000-0', email:'contacto@cotrafasocial.com', telefono:'+57 (000) 000 00 00', web:'https://cotrafasocial.com', watermark:'COTRAFA SOCIAL — CONFIDENCIAL' };
   (function(){ try{const s=localStorage.getItem('cotrafa_logo_base64'); if(s) BRAND.logoDataURI=s;}catch(e){} preloadLogo(); })();
   async function preloadLogo(){ if(BRAND.logoDataURI) return; try{ const r=await fetch(BRAND.logoURL,{mode:'cors'}); const b=await r.blob(); BRAND.logoDataURI=await blobToDataURL(b);}catch(e){} }
   function blobToDataURL(blob){ return new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(blob); }); }
@@ -191,95 +191,130 @@
   function formatPercentage(v){ return `${Number(v||0).toFixed(1)}%`; }
   function showLoading(show){ document.getElementById('loading').style.display = show ? 'flex' : 'none'; }
 
-  // ====== PDF Ejecutivo (CORREGIDO) ======
-  // Helpers: detectar formato de imagen y agregar de forma segura
-  function detectImageFormatFromDataURL(dataURL) {
-    if (!dataURL || typeof dataURL !== 'string') return 'PNG';
-    if (dataURL.startsWith('data:image/jpeg') || dataURL.startsWith('data:image/jpg')) return 'JPEG';
-    if (dataURL.startsWith('data:image/webp')) return 'WEBP';
-    return 'PNG';
-  }
-  function safeAddImage(doc, dataURL, x, y, w, h) {
-    if (!dataURL) return;
-    try {
-      const fmt = detectImageFormatFromDataURL(dataURL);
-      doc.addImage(dataURL, fmt, x, y, w, h);
-    } catch (e) {
-      console.warn('No se pudo incrustar una imagen en el PDF:', e);
-    }
-  }
-  // CORREGIDO: exportación de gráficos en alta calidad
-  function getChartImageById(cid) {
-    const chart = charts[cid];
-    if (!chart || !chart.canvas) return null;
-    try {
-      const originalWidth = chart.canvas.width;
-      const originalHeight = chart.canvas.height;
-      const tempCanvas = document.createElement('canvas');
-      const tempCtx = tempCanvas.getContext('2d');
-      const scale = 2; // Factor de escala para mejor calidad
-      tempCanvas.width = originalWidth * scale;
-      tempCanvas.height = originalHeight * scale;
-      tempCtx.imageSmoothingEnabled = true;
-      tempCtx.imageSmoothingQuality = 'high';
-      tempCtx.scale(scale, scale);
-      tempCtx.drawImage(chart.canvas, 0, 0);
-      return tempCanvas.toDataURL('image/png', 1.0);
-    }
-    catch (e) {
-      console.warn('No se pudo exportar el canvas a imagen:', e);
-      return null;
-    }
-  }
-
-  async function generateReport(){ try{ if(!window.jspdf||!window.jspdf.jsPDF){ alert('No se pudo cargar jsPDF.'); return; } const {jsPDF}=window.jspdf; const doc=new jsPDF('l','mm','a4'); const pageW=doc.internal.pageSize.getWidth(); const pageH=doc.internal.pageSize.getHeight(); const M=14; drawCover(doc,pageW,pageH,M); drawWatermark(doc,pageW,pageH); doc.addPage(); drawHeader(doc); const resumen=buildInsights(); const metodologia=buildMethodology(); let y=28; doc.setTextColor(15,23,42); doc.setFontSize(14); doc.text('Resumen Ejecutivo',M,y); y+=6; doc.setFontSize(9); doc.setTextColor(51,65,85); resumen.forEach(line=>{ const used=doc.splitTextToSize('• '+line,pageW-2*M); doc.text(used,M,y); y+=(used.length*4+2); }); y+=4; doc.setTextColor(15,23,42); doc.setFontSize(12); doc.text('Nota metodológica',M,y); y+=5; doc.setFontSize(8); doc.setTextColor(71,85,105); metodologia.forEach(line=>{ const used=doc.splitTextToSize(line,pageW-2*M); doc.text(used,M,y); y+=(used.length*4+1); }); drawWatermark(doc,pageW,pageH); const kpiY=y+2; const boxW=(pageW-2*M-3*6)/4; const kpiVals=[["% Pago",pctPago()],["% No Pago",pctNoPago()],["Cantidad",formatNumber(filteredData.length)],["Cobertura",formatPercentage(rawData.length?(filteredData.length/rawData.length*100):0)]]; for(let i=0;i<4;i++){ const x=M+i*(boxW+6); drawKPI(doc,x,kpiY,boxW,20,kpiVals[i][0],kpiVals[i][1]); } drawWatermark(doc,pageW,pageH);
-    // CORREGIDO: Layout de gráficas mejorado
-    const gW=(pageW-2*M-6)/2; const gH=60;
-    let gy=kpiY+26; const ids=['chartMesAfiliacion','chartAnoAfiliacion','chartCategoriaEdad','chartEstado','chartCiudad','chartMesesSinPagar'];
+  // ====== PDF Ejecutivo ======
+  async function generateReport(){ try{ if(!window.jspdf||!window.jspdf.jsPDF){ alert('No se pudo cargar jsPDF.'); return; } const {jsPDF}=window.jspdf; const doc=new jsPDF('l','mm','a4'); const pageW=doc.internal.pageSize.getWidth(); const pageH=doc.internal.pageSize.getHeight(); const M=14; drawCover(doc,pageW,pageH,M); drawWatermark(doc,pageW,pageH); doc.addPage('a4','l'); drawHeader(doc); const resumen=buildInsights(); let y=28; doc.setTextColor(15,23,42); doc.setFontSize(14); doc.text('Resumen Ejecutivo',M,y); y+=6; doc.setFontSize(9); doc.setTextColor(51,65,85); resumen.forEach(line=>{ const used=doc.splitTextToSize('• '+line,pageW-2*M); doc.text(used,M,y); y+=(used.length*4+2); }); y+=6; const kpiY=y+2; const boxW=(pageW-2*M-3*6)/4; const kpiVals=[["% Pago",pctPago()],["% No Pago",pctNoPago()],["Cantidad",formatNumber(filteredData.length)],["Cobertura",formatPercentage(rawData.length?(filteredData.length/rawData.length*100):0)]]; for(let i=0;i<4;i++){ const x=M+i*(boxW+6); drawKPI(doc,x,kpiY,boxW,20,kpiVals[i][0],kpiVals[i][1]); }
+    // Páginas de gráficas: 1 por página, ancho completo para máxima legibilidad
+    addFooter(doc); doc.addPage('a4','l'); drawHeader(doc);
+    const interGap=8; const titleY=24; const chartTopY=titleY+10; const footerReserve=18;
+    const gW=(pageW-2*M); const gH=(pageH-chartTopY-footerReserve);
+    const ids=['chartMesAfiliacion','chartAnoAfiliacion','chartCategoriaEdad','chartEstado','chartCiudad','chartMesesSinPagar'];
     for(let i=0;i<ids.length;i++){
-      if(i>0 && i%4===0){ addFooter(doc); doc.addPage(); drawHeader(doc); gy=28; drawWatermark(doc,pageW,pageH);} const col=i%2, row=Math.floor((i%4)/2); const x=M+col*(gW+6); const yy=gy+row*(gH+6); drawChartCard(doc,x,yy,gW,gH,ids[i]); if(i%4===3){ gy+=2*(gH+6); drawWatermark(doc,pageW,pageH);} }
-    addFooter(doc); drawWatermark(doc,pageW,pageH); doc.save('informe_ejecutivo.pdf'); }catch(err){ console.error(err); alert('Error al generar el informe.'); } }
-
-  // Header (usa safeAddImage)
-  function drawHeader(doc){ const pageW=doc.internal.pageSize.getWidth(); const headH=20; doc.setFillColor(0,47,90); doc.rect(0,0,pageW,headH,'F'); if(BRAND.logoDataURI){ safeAddImage(doc,BRAND.logoDataURI,10,3,14,14);} doc.setTextColor(255,255,255); doc.setFontSize(14); doc.text('Informe Ejecutivo — Cotrafa Social',28,8); doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'),28,15); const info=`${ORG.nit}  •  ${ORG.email}  •  ${ORG.telefono}  •  ${ORG.web}`; const w=doc.getTextWidth(info); doc.text(info,pageW-10-w,15); }
-
-  function drawKPI(doc,x,y,w,h,label,value){ doc.setDrawColor(215,232,246); doc.setFillColor(255,255,255); doc.roundedRect(x,y,w,h,2,2,'FD'); doc.setTextColor(51,65,85); doc.setFontSize(9); doc.text(label,x+4,y+6); doc.setTextColor(0,51,102); doc.setFontSize(14); doc.text(String(value),x+4,y+14); }
-
-  // Chart card (CORREGIDO: posicionamiento y tamaño de imagen)
-  function drawChartCard(doc,x,y,w,h,cid){
-    doc.setDrawColor(215,232,246);
-    doc.setFillColor(255,255,255);
-    doc.roundedRect(x,y,w,h,2,2,'FD');
-    const img=getChartImageById(cid);
-    if(img){
-      const imgW = w - 4; // Margen de 2mm a cada lado
-      const imgH = h - 12; // Espacio para el título
-      const imgX = x + 2;
-      const imgY = y + 8;
-      safeAddImage(doc,img,imgX,imgY,imgW,imgH);
+      if(i>0){ addFooter(doc); doc.addPage('a4','l'); drawHeader(doc); }
+      const chartTitle = getChartTitle(ids[i]);
+      sectionTitle(doc, chartTitle || 'Gráfica', M, titleY);
+      const filtersText = getActiveFiltersText();
+      if(filtersText){ doc.setTextColor(71,85,105); doc.setFontSize(8); doc.text(filtersText, M, titleY+5); }
+      const x=M; const yy=chartTopY;
+      drawChartCard(doc,x,yy,gW,gH,ids[i]);
     }
-    doc.setTextColor(51,65,85);
-    doc.setFontSize(9);
-    const title=charts[cid] && charts[cid].canvas ? (charts[cid].canvas.getAttribute('aria-label')||'') : '';
-    doc.text(title,x+4,y+4);
+    addFooter(doc); downloadPDF(doc,'informe_ejecutivo.pdf'); }catch(err){ console.error(err); alert('Error al generar el informe.'); } }
+  function drawHeader(doc){ const pageW=doc.internal.pageSize.getWidth(); const headH=20; doc.setFillColor(0,47,90); doc.rect(0,0,pageW,headH,'F'); if(BRAND.logoDataURI){ doc.addImage(BRAND.logoDataURI,'PNG',10,3,14,14);} doc.setTextColor(255,255,255); doc.setFontSize(14); doc.text('Informe Ejecutivo — Cotrafa Social',28,8); doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'),28,15); const info=`${ORG.nit}  •  ${ORG.email}  •  ${ORG.telefono}  •  ${ORG.web}`; const w=doc.getTextWidth(info); doc.text(info,pageW-10-w,15); }
+  function drawKPI(doc,x,y,w,h,label,value){ doc.setDrawColor(215,232,246); doc.setFillColor(255,255,255); doc.roundedRect(x,y,w,h,2,2,'FD'); doc.setTextColor(51,65,85); doc.setFontSize(9); doc.text(label,x+4,y+6); doc.setTextColor(0,51,102); doc.setFontSize(14); doc.text(String(value),x+4,y+14); }
+  function drawChartCard(doc,x,y,w,h,cid){
+    doc.setDrawColor(215,232,246); doc.setFillColor(255,255,255);
+    doc.roundedRect(x,y,w,h,2,2,'FD');
+    const chart=charts[cid]; if(!chart||!chart.canvas) return;
+    const img=captureChartImage(cid, w-8, h-18) || chart.canvas.toDataURL('image/png');
+    const innerX=x+4, innerY=y+12, innerW=w-8, innerH=h-18;
+    // Ajustar por relación de aspecto usando metadatos reales de la imagen
+    let drawW=innerW, drawH=innerH, offX=innerX, offY=innerY;
+    try{
+      const props = doc.getImageProperties(img);
+      const imgRatio = props.width / props.height;
+      const boxRatio = innerW / innerH;
+      if (imgRatio > boxRatio){
+        drawW = innerW; drawH = innerW / imgRatio;
+      } else {
+        drawH = innerH; drawW = innerH * imgRatio;
+      }
+      offX = innerX + (innerW - drawW) / 2;
+      offY = innerY + (innerH - drawH) / 2;
+    }catch(_){ /* si falla, usamos innerW/innerH */ }
+    doc.addImage(img,'PNG',offX,offY,drawW,drawH);
+    doc.setTextColor(51,65,85); doc.setFontSize(10);
+    const title=chart.canvas.getAttribute('aria-label')||'';
+    doc.text(title,x+6,y+8);
+  }
+  function addFooter(doc){ const pageW=doc.internal.pageSize.getWidth(); const pageH=doc.internal.pageSize.getHeight(); const txt=`Página ${doc.internal.getNumberOfPages()}`; doc.setDrawColor(231,238,247); doc.line(12,pageH-10,pageW-12,pageH-10); doc.setTextColor(71,85,105); doc.setFontSize(8); doc.text(txt,pageW-12-doc.getTextWidth(txt),pageH-6); }
+  function drawCover(doc,pageW,pageH,M){ doc.setFillColor(0,47,90); doc.rect(0,0,pageW,24,'F'); if(BRAND.logoDataURI){ doc.addImage(BRAND.logoDataURI,'PNG',M,4,18,18);} doc.setTextColor(255,255,255); doc.setFontSize(16); doc.text('Informe Ejecutivo — Cotrafa Social',M+22,12); doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'),M+22,19); doc.setTextColor(15,23,42); doc.setFontSize(26); doc.text('Análisis Integral',pageW/2,pageH/2-6,{align:'center'}); doc.setFontSize(11); doc.setTextColor(71,85,105); const sub=`${ORG.nit}  •  ${ORG.email}  •  ${ORG.telefono}  •  ${ORG.web}`; doc.text(sub,pageW/2,pageH/2+2,{align:'center'}); doc.setDrawColor(0,174,239); doc.setLineWidth(.6); doc.line(M,pageH-16,pageW-M,pageH-16); doc.setFontSize(9); doc.setTextColor(0,51,102); doc.text('Confidencial — Uso interno',pageW/2,pageH-10,{align:'center'}); }
+  function drawWatermark(doc,pageW,pageH){ const prev=doc.getTextColor(); doc.setFontSize(48); doc.setTextColor(180,196,210); doc.text(ORG.watermark,pageW/2,pageH/2,{angle:-25,align:'center'}); if(prev) doc.setTextColor(prev); }
+
+  // ====== PDF helpers ======
+  function sectionTitle(doc, title, x, y){ doc.setTextColor(15,23,42); doc.setFontSize(12); doc.text(String(title||''), x, y); }
+  function getChartTitle(cid){ const chart=charts[cid]; return chart && chart.canvas ? chart.canvas.getAttribute('aria-label')||'' : ''; }
+  function getActiveFiltersText(){
+    const parts=[];
+    try{
+      // Select-based filters
+      const map=[['Ciudad','Ciudad'],['Estado','Estado'],['CategoriaEdad','Categoría Edad']];
+      map.forEach(([key,label])=>{ const sel=document.getElementById('filter-'+key); if(!sel) return; const vals=Array.from(sel.selectedOptions).map(o=>o.value).filter(v=>v!=='__all__'); if(vals.length) parts.push(`${label}: ${vals.join(', ')}`); });
+      // Chart click filters
+      const names={month:'Mes',year:'Año',categoriaEdad:'Cat. Edad',estado:'Estado',ciudad:'Ciudad',mesesSinPagarRange:'Meses sin pagar'};
+      Object.entries(chartFilterState).forEach(([k,v])=>{ if(v) parts.push(`${names[k]}: ${v}`); });
+    }catch(_){}
+    return parts.length? `Filtros: ${parts.join('  •  ')}` : '';
+  }
+  function captureChartImage(cid, widthMm, heightMm){
+    try{
+      const chart=charts[cid]; if(!chart||!chart.canvas) return null;
+      const canvas=chart.canvas;
+      const origW=canvas.width, origH=canvas.height;
+      const PX_PER_MM=3.78; // ~96 DPI
+      const targetW=Math.max(600, Math.floor(widthMm*PX_PER_MM));
+      const targetH=Math.max(400, Math.floor(heightMm*PX_PER_MM));
+      chart.resize(targetW, targetH);
+      chart.update();
+      const dataURL=canvas.toDataURL('image/png');
+      chart.resize(origW, origH);
+      chart.update();
+      return dataURL;
+    }catch(_){ return null; }
   }
 
-  function addFooter(doc){ const pageW=doc.internal.pageSize.getWidth(); const pageH=doc.internal.pageSize.getHeight(); const txt=`Página ${doc.internal.getNumberOfPages()}`; doc.setDrawColor(231,238,247); doc.line(12,pageH-10,pageW-12,pageH-10); doc.setTextColor(71,85,105); doc.setFontSize(8); doc.text(txt,pageW-12-doc.getTextWidth(txt),pageH-6); }
+  // ====== Executive summary helpers ======
+  function buildInsights(){
+    const insights=[];
+    insights.push(`Pago promedio: ${pctPago()}`);
+    insights.push(`No pago promedio: ${pctNoPago()}`);
+    insights.push(`Cantidad filtrada: ${formatNumber(filteredData.length)}`);
+    const cobertura = rawData.length ? (filteredData.length/rawData.length*100) : 0;
+    insights.push(`Cobertura del conjunto: ${formatPercentage(cobertura)}`);
+    return insights;
+  }
 
-  // Portada (usa safeAddImage)
-  function drawCover(doc,pageW,pageH,M){ doc.setFillColor(0,47,90); doc.rect(0,0,pageW,24,'F'); if(BRAND.logoDataURI){ safeAddImage(doc,BRAND.logoDataURI,M,4,18,18);} doc.setTextColor(255,255,255); doc.setFontSize(16); doc.text('Informe Ejecutivo — Cotrafa Social',M+22,12); doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'),M+22,19); doc.setTextColor(15,23,42); doc.setFontSize(26); doc.text('Análisis Integral',pageW/2,pageH/2-6,{align:'center'}); doc.setFontSize(11); doc.setTextColor(71,85,105); const sub=`${ORG.nit}  •  ${ORG.email}  •  ${ORG.telefono}  •  ${ORG.web}`; doc.text(sub,pageW/2,pageH/2+2,{align:'center'}); doc.setDrawColor(0,174,239); doc.setLineWidth(.6); doc.line(M,pageH-16,pageW-M,pageH-16); doc.setFontSize(9); doc.setTextColor(0,51,102); doc.text('Confidencial — Uso interno',pageW/2,pageH-10,{align:'center'}); }
-
-  // Watermark (restaura color a un valor seguro)
-  function drawWatermark(doc,pageW,pageH){ const RESTORE={r:15,g:23,b:42}; doc.setFontSize(48); doc.setTextColor(180,196,210); doc.text(ORG.watermark,pageW/2,pageH/2,{angle:-25,align:'center'}); doc.setTextColor(RESTORE.r,RESTORE.g,RESTORE.b); }
-
-  // NUEVO: contenido mínimo para resumen y metodología
-  function buildInsights(){ const total=filteredData.length; const cobertura=rawData.length ? (total/rawData.length*100) : 0; return [ `Cobertura del análisis sobre la base cargada: ${formatPercentage(cobertura)}.`, `Promedio de pago ponderado en el subconjunto filtrado: ${pctPago()}.`, `Promedio de no pago ponderado en el subconjunto filtrado: ${pctNoPago()}.`, `Total de registros analizados con filtros actuales: ${formatNumber(total)}.` ]; }
-  function buildMethodology(){ return [ 'La información es cargada por el usuario desde un archivo CSV (UTF-8) con delimitador ; o ,.', 'Los campos son normalizados (títulos habituales como Ciudad, Estado, Categoría de Edad, Mes/Año de afiliación).', 'Los porcentajes de pago/no pago se calculan a partir de las columnas provistas o, en su defecto, a partir de cuotas pagadas y meses afiliado.', 'Los gráficos se renderizan con Chart.js y se exportan como imágenes en el informe.', 'El logotipo puede incrustarse como base64 para asegurar su disponibilidad en el PDF.' ]; }
+  // Descarga robusta del PDF (evita bloqueos de pop‑up y funciona cross‑browser)
+  function downloadPDF(doc, filename){
+    try{
+      const blob = doc.output('blob');
+      // IE/Edge Legacy
+      if (window.navigator && typeof window.navigator.msSaveOrOpenBlob === 'function'){
+        window.navigator.msSaveOrOpenBlob(blob, filename);
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.rel = 'noopener';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1000);
+    }catch(e){
+      // Último recurso: abrir en nueva pestaña
+      try{
+        const buf = doc.output('arraybuffer');
+        const url = URL.createObjectURL(new Blob([buf], {type:'application/pdf'}));
+        window.open(url,'_blank','noopener');
+        setTimeout(()=>URL.revokeObjectURL(url), 5000);
+      }catch(_){ console.error('Fallo al descargar el PDF:', e); }
+    }
+  }
 
   // ====== UI ======
   function toast(msg){ const t=document.createElement('div'); t.textContent=msg; Object.assign(t.style,{position:'fixed',bottom:'24px',right:'24px',padding:'10px 14px',background:'linear-gradient(135deg,var(--primary),var(--accent))',color:'#fff',borderRadius:'12px',boxShadow:'var(--shadow)',zIndex:9999,fontWeight:'700'}); document.body.appendChild(t); setTimeout(()=>t.remove(),2400); }
 
-  // ====== Helpers (duplicados conservados para no alterar tu estructura) ======
+  // ====== Helpers ======
   function showLoading(show){ document.getElementById('loading').style.display = show ? 'flex' : 'none'; }
   function formatNumber(num,dec=0){ return Number(num||0).toLocaleString('es-CO',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
   function formatPercentage(v){ return `${Number(v||0).toFixed(1)}%`; }
