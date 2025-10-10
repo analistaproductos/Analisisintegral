@@ -248,7 +248,27 @@ function getChartImageById(cid) {
   function drawKPI(doc,x,y,w,h,label,value){ doc.setDrawColor(215,232,246); doc.setFillColor(255,255,255); doc.roundedRect(x,y,w,h,2,2,'FD'); doc.setTextColor(51,65,85); doc.setFontSize(9); doc.text(label,x+4,y+6); doc.setTextColor(0,51,102); doc.setFontSize(14); doc.text(String(value),x+4,y+14); }
 
   // Chart card (usa safeAddImage)
-  function drawChartCard(doc,x,y,w,h,cid){ doc.setDrawColor(215,232,246); doc.setFillColor(255,255,255); doc.roundedRect(x,y,w,h,2,2,'FD'); const img=getChartImageById(cid); if(img) safeAddImage(doc,img,x+2,y+6,w-4,h-10); doc.setTextColor(51,65,85); doc.setFontSize(9); const title=charts[cid] && charts[cid].canvas ? (charts[cid].canvas.getAttribute('aria-label')||'') : ''; doc.text(title,x+4,y+4); }
+  function function drawChartCard(doc,x,y,w,h,cid){ 
+  doc.setDrawColor(215,232,246); 
+  doc.setFillColor(255,255,255); 
+  doc.roundedRect(x,y,w,h,2,2,'FD'); 
+  
+  const img=getChartImageById(cid); 
+  if(img) { 
+    // CORREGIDO: Mejorar el posicionamiento y tamaño de la imagen
+    const imgW = w - 4; // Margen de 2mm a cada lado
+    const imgH = h - 12; // Espacio para el título
+    const imgX = x + 2;
+    const imgY = y + 8;
+    
+    safeAddImage(doc,img,imgX,imgY,imgW,imgH); 
+  } 
+  
+  doc.setTextColor(51,65,85); 
+  doc.setFontSize(9); 
+  const title=charts[cid] && charts[cid].canvas ? (charts[cid].canvas.getAttribute('aria-label')||'') : ''; 
+  doc.text(title,x+4,y+4); 
+}
 
   function addFooter(doc){ const pageW=doc.internal.pageSize.getWidth(); const pageH=doc.internal.pageSize.getHeight(); const txt=`Página ${doc.internal.getNumberOfPages()}`; doc.setDrawColor(231,238,247); doc.line(12,pageH-10,pageW-12,pageH-10); doc.setTextColor(71,85,105); doc.setFontSize(8); doc.text(txt,pageW-12-doc.getTextWidth(txt),pageH-6); }
 
