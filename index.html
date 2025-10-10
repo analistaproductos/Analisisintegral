@@ -57,39 +57,13 @@
       doc.setTextColor(0,51,102); doc.setFontSize(14); doc.text(String(value), x+4, y+14);
     }
 
-    // === Helpers para PDF robusto ===
-if (typeof wait === 'undefined') { var wait = (ms)=> new Promise(r=>setTimeout(r, ms)); }
-if (typeof logErr === 'undefined') { var logErr = function(scope, err){ console.error(`[PDF:${scope}]`, err); }; }
-
-function drawChartCard(doc,x,y,w,h,cid){
-  try{
-    doc.setDrawColor(215,232,246);
-    doc.setFillColor(255,255,255);
-    doc.roundedRect(x,y,w,h,2,2,'FD');
-    const chart = charts[cid];
-    // Si no hay chart o no está listo, muestro etiqueta y sigo
-    if(!chart || !chart.canvas){
-      doc.setTextColor(120,130,140);
-      doc.setFontSize(9);
-      doc.text('Gráfico no disponible', x+4, y+10);
-      return;
+    function drawChartCard(doc,x,y,w,h,cid){
+      doc.setDrawColor(215,232,246); doc.setFillColor(255,255,255); doc.roundedRect(x,y,w,h,2,2,'FD');
+      const chart = charts[cid]; if(!chart || !chart.canvas) return;
+      const img = chart.canvas.toDataURL('image/png');
+      doc.addImage(img,'PNG', x+2, y+6, w-4, h-10);
+      doc.setTextColor(51,65,85); doc.setFontSize(9); doc.text(chart.options.plugins?.title?.text || chart.canvas.getAttribute('aria-label') || '', x+4, y+4);
     }
-    // Asegura que el chart esté actualizado antes del snapshot
-    try { chart.update('none'); } catch(e) { /* ignore */ }
-    const img = chart.canvas.toDataURL('image/png');
-    doc.addImage(img, 'PNG', x+2, y+6, w-4, h-10);
-    doc.setTextColor(51,65,85); doc.setFontSize(9);
-    const title = chart.canvas.getAttribute('aria-label') || '';
-    if(title) doc.text(title, x+4, y+4);
-  }catch(err){
-    logErr(`drawChartCard:${cid}`, err);
-    // Caja con mensaje de error suave en vez de romper el PDF
-    doc.setDrawColor(240, 150, 150);
-    doc.roundedRect(x,y,w,h,2,2,'S');
-    doc.setTextColor(150,50,50); doc.setFontSize(9);
-    doc.text('No se pudo exportar este gráfico.', x+4, y+10);
-  }
-}
 
     function addFooter(doc){
       const pageW = doc.internal.pageSize.getWidth(); const pageH = doc.internal.pageSize.getHeight();
@@ -140,112 +114,8 @@ function drawChartCard(doc,x,y,w,h,cid){
     function formatPercentage(v){ return `${Number(v||0).toFixed(1)}%`; }
 
     async function generateReport(){
-  try{
-    if(!window.jspdf || !window.jspdf.jsPDF){
-      alert('No se pudo cargar jsPDF.'); return;
-    }
-    const { jsPDF } = window.jspdf;
-
-    // Espera breve por si acabas de aplicar filtros o renderizar charts
-    await wait(150);
-
-    const doc = new jsPDF('l','mm','a4');
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
-    const M = 14;
-
-    // Portada
-    try{
-      drawCover(doc, pageW, pageH, M);
-      drawWatermark(doc, pageW, pageH);
-    }catch(e){ logErr('cover', e); }
-
-    // Resumen + KPIs
-    doc.addPage('a4','l');
-    try{
-      drawHeader(doc);
-      const resumen = buildInsights();
-      const metodologia = buildMethodology();
-      let y = 28;
-
-      doc.setTextColor(15,23,42); doc.setFontSize(14);
-      doc.text('Resumen Ejecutivo', M, y); y += 6;
-      doc.setFontSize(9); doc.setTextColor(51,65,85);
-      resumen.forEach(line=>{
-        const used = doc.splitTextToSize('• '+line, pageW - 2*M);
-        doc.text(used, M, y);
-        y += (used.length*4 + 2);
-      });
-      y += 4;
-
-      doc.setTextColor(15,23,42); doc.setFontSize(12);
-      doc.text('Nota metodológica', M, y); y += 5;
-      doc.setFontSize(8); doc.setTextColor(71,85,105);
-      metodologia.forEach(line=>{
-        const used = doc.splitTextToSize(line, pageW - 2*M);
-        doc.text(used, M, y);
-        y += (used.length*4 + 1);
-      });
-      drawWatermark(doc, pageW, pageH);
-
-      // KPIs
-      const kpiY = y + 2;
-      const boxW = (pageW - 2*M - 3*6)/4;
-      const kpiVals = [
-        ['% Pago', pctPago()],
-        ['% No Pago', pctNoPago()],
-        ['Cantidad', formatNumber(filteredData.length)],
-        ['Cobertura', formatPercentage(rawData.length ? (filteredData.length/rawData.length*100) : 0)]
-      ];
-      for(let i=0;i<4;i++){
-        const x = M + i*(boxW+6);
-        drawKPI(doc, x, kpiY, boxW, 20, kpiVals[i][0], kpiVals[i][1]);
-      }
-      drawWatermark(doc, pageW, pageH);
-    }catch(e){ logErr('resumen_kpi', e); }
-
-    // Gráficos (2x2 por página)
-    try{
-      const gW = (pageW - 2*M - 6)/2;
-      const gH = 70;
-      let gy = 28 + 26 + 26; // punto razonable tras el bloque anterior
-      const chartsIds = [
-        'chartMesAfiliacion','chartAnoAfiliacion',
-        'chartCategoriaEdad','chartEstado',
-        'chartCiudad','chartMesesSinPagar'
-      ];
-
-      for(let i=0;i<chartsIds.length;i++){
-        if(i>0 && i%4===0){
-          addFooter(doc);
-          doc.addPage('a4','l');
-          drawHeader(doc);
-          gy = 28;
-          drawWatermark(doc, pageW, pageH);
-          await wait(50); // pequeña pausa entre páginas
-        }
-        const col = i%2; 
-        const row = Math.floor((i%4)/2);
-        const x = M + col*(gW+6);
-        const yy = gy + row*(gH+6);
-        drawChartCard(doc, x, yy, gW, gH, chartsIds[i]);
-
-        if(i%4===3){
-          gy += 2*(gH+6);
-          drawWatermark(doc, pageW, pageH);
-        }
-      }
-    }catch(e){ logErr('graficos', e); }
-
-    // Pie y guardar
-    try{ addFooter(doc); drawWatermark(doc, pageW, pageH); }catch(e){ /* no crítico */ }
-    doc.save('informe_ejecutivo.pdf');
-
-  }catch(err){
-    logErr('fatal', err);
-    alert('Error al generar el informe. Abre la consola (F12 → Console) para ver detalles y te lo corrijo.');
-  }
-}
+      try{
+        if(!window.jspdf || !window.jspdf.jsPDF){ alert('No se pudo cargar jsPDF.'); return; }
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('l','mm','a4');
         const pageW = doc.internal.pageSize.getWidth();
@@ -298,4 +168,3 @@ function drawChartCard(doc,x,y,w,h,cid){
   </script>
 </body>
 </html>
-
