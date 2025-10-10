@@ -12,119 +12,615 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     /* ─────────────────────────────────────────────────────────────────────────────
-       Informe PDF
+       Tema ejecutivo Cotrafa Social
+       ─ Paleta institucional refinada con variables CSS
     ───────────────────────────────────────────────────────────────────────────── */
+    :root{
+      --primary:#003366;      /* Azul institucional */
+      --accent:#00AEEF;       /* Cian corporativo */
+      --success:#7CC242;      /* Verde */
+      --warning:#F39200;      /* Naranja */
+      --navy:#002f5a;         /* Azul profundo */
+      --teal:#00a6a6;         /* Complementario */
+      --bg:#F5F7FB;           /* Fondo suave */
+      --surface:#FFFFFF;      /* Tarjetas */
+      --ink:#0f172a;          /* Título */
+      --muted:#475569;        /* Texto secundario */
+      --ring: rgba(0,174,239,.35);
+      --shadow: 0 10px 30px rgba(2,14,39,.08);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+    img{max-width:100%;display:block}
+    h1,h2,h3{line-height:1.1;color:var(--navy)}
+    h1{font-size:clamp(28px,3.6vw,40px);margin:6px 0 4px}
+    h2{font-size:clamp(18px,2.2vw,22px);margin:0 0 12px}
+    a{color:inherit;text-decoration:none}
 
-    function toast(msg){
-      const t = document.createElement('div'); t.textContent = msg;
-      Object.assign(t.style,{position:'fixed',bottom:'24px',right:'24px',padding:'10px 14px',background:'linear-gradient(135deg,var(--primary),var(--accent))',color:'#fff',borderRadius:'12px',boxShadow:'var(--shadow)',zIndex:9999,fontWeight:'700'});
-      document.body.appendChild(t); setTimeout(()=>t.remove(),2400);
+    /* Layout base */
+    .container{max-width:1220px;margin:0 auto;padding:0 20px}
+    header.topbar{position:sticky;top:0;z-index:999;background:linear-gradient(180deg,#fff,rgba(255,255,255,.92));backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid #e9eff6}
+    .nav{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand img{height:42px;width:auto}
+    .brand .logotxt{font-weight:800;letter-spacing:.2px;color:var(--primary)}
+
+    /* Controles */
+    .toolbar{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;margin:18px 0}
+    .panel{background:var(--surface);border:1px solid #e7eef7;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+    .file{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+    .file input[type="file"]{padding:10px;border-radius:12px;border:1px dashed #cfe5f4;background:#fafcff}
+    .meta{font-size:12px;color:var(--muted)}
+
+    .filters{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .filter{display:flex;flex-direction:column;gap:6px}
+    .filter label{font-size:12px;font-weight:700;color:#334155}
+    .filter input[type="text"], .filter select{padding:10px;border-radius:12px;border:1px solid #dbe7f3;background:#fff;outline:none}
+    .filter select{min-height:108px}
+
+    .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;font-weight:700;border:1px solid transparent;cursor:pointer}
+    .btn-primary{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff}
+    .btn-outline{background:#fff;border-color:#dbe7f3;color:var(--primary)}
+    .btn-warning{background:linear-gradient(135deg,var(--warning),#ffc46b);color:#432c00}
+    .btn:hover{transform:translateY(-1px)}
+
+    /* Chips de filtros activos */
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 0}
+    .chip{display:inline-flex;align-items:center;gap:6px;background:#f1f7fb;border:1px solid #d7e8f6;color:#0b3a57;padding:6px 10px;border-radius:999px;font-size:12px}
+    .chip button{all:unset;cursor:pointer}
+
+    /* KPIs */
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:12px 0 22px}
+    .kpi{position:relative;background:linear-gradient(135deg,#ffffff, #f7fbff);border:1px solid #e7eef7;border-radius:18px;padding:18px;box-shadow:var(--shadow)}
+    .kpi .label{display:flex;align-items:center;gap:8px;color:#334155;font-size:12px;font-weight:700}
+    .kpi .value{font-size:26px;font-weight:800;color:var(--primary);margin-top:6px}
+    .kpi .delta{position:absolute;top:12px;right:12px;font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(124,194,66,.12);color:#1a5312;border:1px solid rgba(124,194,66,.3)}
+
+    /* Gráficos */
+    .charts{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .card{background:var(--surface);border:1px solid #e7eef7;border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+    .card h3{margin:0 0 10px;font-size:16px}
+    .card canvas{width:100%!important;height:320px!important}
+
+    /* Pie */
+    footer{margin:26px 0 40px}
+    .foot{display:flex;flex-wrap:wrap;align-items:center;gap:12px;justify-content:space-between}
+    .small{font-size:12px;color:var(--muted)}
+
+    /* Responsive */
+    @media (max-width: 1100px){
+      .toolbar{grid-template-columns:1fr}
+      .charts{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width: 720px){
+      .filters{grid-template-columns:1fr}
+      .kpis{grid-template-columns:1fr 1fr}
+      .charts{grid-template-columns:1fr}
     }
 
-    function drawCover(doc, pageW, pageH, M){
-      doc.setFillColor(0,47,90); doc.rect(0,0,pageW,24,'F');
-      if(BRAND.logoDataURI){ doc.addImage(BRAND.logoDataURI,'PNG', M, 4, 18, 18); }
-      doc.setTextColor(255,255,255); doc.setFontSize(16); doc.text('Informe Ejecutivo — Cotrafa Social', M+22, 12);
-      doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'), M+22, 19);
-      doc.setTextColor(15,23,42); doc.setFontSize(26);
-      doc.text('Análisis Integral', pageW/2, pageH/2 - 6, {align:'center'});
-      doc.setFontSize(11); doc.setTextColor(71,85,105);
-      const sub = `${ORG.nit}  •  ${ORG.email}  •  ${ORG.telefono}  •  ${ORG.web}`;
-      doc.text(sub, pageW/2, pageH/2 + 2, {align:'center'});
-      doc.setDrawColor(0,174,239); doc.setLineWidth(0.6); doc.line(M, pageH-16, pageW-M, pageH-16);
-      doc.setFontSize(9); doc.setTextColor(0,51,102); doc.text('Confidencial — Uso interno', pageW/2, pageH-10, {align:'center'});
+    /* Accesibilidad */
+    :focus-visible{outline:3px solid var(--ring);outline-offset:3px}
+  </style>
+  <link rel="icon" type="image/png" href="https://cotrafasocial.com/wp-content/uploads/2023/09/logo-cotrafasocial.png"/>
+</head>
+<body>
+  <!-- Barra superior -->
+  <header class="topbar">
+    <div class="container nav">
+      <div class="brand" aria-label="Cotrafa Social">
+        <img src="https://cotrafasocial.com/wp-content/uploads/2023/09/logo-cotrafasocial.png" alt="Logo Cotrafa Social" />
+        <span class="logotxt">Cotrafa Social</span>
+      </div>
+      <div class="actions">
+        <button class="btn btn-outline" id="btnResetAll" title="Limpiar filtros">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 6h18M8 6v-1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1m2 0v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6" stroke="var(--primary)" stroke-width="2"/></svg>
+          Limpiar
+        </button>
+        <button class="btn btn-outline" id="btnLogoBase64" title="Fijar logo en PDF (base64)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M3 21h18" stroke="var(--primary)" stroke-width="2" stroke-linecap="round"/></svg>
+          Logo en PDF
+        </button>
+        <button class="btn btn-primary" id="btnReport" title="Descargar informe ejecutivo">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" stroke="#fff" stroke-width="2"/><path d="M14 2v6h6" stroke="#fff" stroke-width="2"/></svg>
+          Informe PDF
+        </button>
+      </div>
+    </div>
+    <input id="logoFile" type="file" accept="image/*" style="display:none" />
+  </header>
+
+  <main class="container">
+    <!-- Controles y filtros -->
+    <section class="toolbar">
+      <div class="panel" aria-labelledby="tituloCarga">
+        <h2 id="tituloCarga">Cargar datos</h2>
+        <div class="file">
+          <input type="file" id="csvFile" accept=".csv" aria-label="Seleccionar archivo CSV" />
+          <div class="meta">CSV delimitado por punto y coma (;) o coma (,). Codificación UTF‑8.</div>
+        </div>
+        <div class="chips" id="chips"></div>
+      </div>
+      <div class="panel" aria-labelledby="tituloFiltros">
+        <h2 id="tituloFiltros">Filtros</h2>
+        <div class="filters" id="filters"></div>
+        <div class="actions">
+          <button class="btn btn-warning" id="btnRefresh">
+            <!-- ícono refresh -->
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36" stroke="#432c00" stroke-width="2"/><path d="M21 5v6h-6" stroke="#432c00" stroke-width="2"/></svg>
+            Refrescar filtros
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPIs ejecutivos -->
+    <section class="kpis" aria-label="Indicadores clave" id="kpiSection">
+      <!-- Se rellenan dinámicamente -->
+    </section>
+
+    <!-- Gráficas -->
+    <section class="charts" id="chartSection" aria-label="Visualizaciones">
+      <!-- Se crean dinámicamente -->
+    </section>
+  </main>
+
+  <footer class="container">
+    <div class="panel foot">
+      <div class="brand">
+        <img src="https://cotrafasocial.com/wp-content/uploads/2023/09/logo-cotrafasocial.png" alt="Logo Cotrafa Social" />
+        <div>
+          <div class="logotxt">Cotrafa Social</div>
+          <div class="small">Dashboard comercial — versión ejecutiva y accesible</div>
+        </div>
+      </div>
+      <div class="small">© <span id="year"></span> Cotrafa Social • Genera reportes PDF y filtra por clic en gráficos</div>
+    </div>
+  </footer>
+
+  <div id="loading" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.35);z-index:9999;color:#fff;font-weight:800">Cargando datos…</div>
+
+  <script>
+    // ───────────────────────────────────────────────────────────────────────────
+    // Marca: logo y base64 persistente para PDF (evita CORS)
+    // ───────────────────────────────────────────────────────────────────────────
+    const BRAND = {
+      logoURL: 'https://cotrafasocial.com/wp-content/uploads/2023/09/logo-cotrafasocial.png',
+      logoDataURI: null
+    };
+    const ORG = {
+      nombre: 'Cotrafa Social',
+      nit: 'NIT 000.000.000-0', // ← reemplázalo por el NIT real
+      email: 'contacto@cotrafasocial.com',
+      telefono: '+57 (000) 000 00 00',
+      web: 'https://cotrafasocial.com',
+      watermark: 'COTRAFA SOCIAL — CONFIDENCIAL'
+    };
+    (function initBrand(){
+      try{ const saved = localStorage.getItem('cotrafa_logo_base64'); if(saved){ BRAND.logoDataURI = saved; } }catch(e){}
+      preloadLogo();
+    })();
+    async function preloadLogo(){
+      if(BRAND.logoDataURI) return; // ya cargado desde localStorage
+      try{
+        const r = await fetch(BRAND.logoURL, {mode:'cors'});
+        const b = await r.blob();
+        BRAND.logoDataURI = await blobToDataURL(b);
+      }catch(e){ /* si falla CORS, el botón Logo en PDF permitirá cargar un archivo local */ }
+    }
+    function blobToDataURL(blob){ return new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(blob); }); }
+    /* ─────────────────────────────────────────────────────────────────────────────
+       Estado y configuración
+    ───────────────────────────────────────────────────────────────────────────── */
+    let rawData = [];
+    let filteredData = [];
+    const charts = {}; // instancias Chart.js
+
+    const filterConfigs = [
+      { key: 'Ciudad', label: 'Ciudad' },
+      { key: 'Estado', label: 'Estado' },
+      { key: 'CategoriaEdad', label: 'Categoría Edad' }
+    ];
+
+    const chartFilterState = { month:null, year:null, categoriaEdad:null, estado:null, ciudad:null, mesesSinPagarRange:null };
+    const chartDimensionMap = {
+      chartMesAfiliacion:'month',
+      chartAnoAfiliacion:'year',
+      chartCategoriaEdad:'categoriaEdad',
+      chartEstado:'estado',
+      chartCiudad:'ciudad',
+      chartMesesSinPagar:'mesesSinPagarRange'
+    };
+
+    // Estilos globales de Chart.js
+    Chart.defaults.font.family = 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+    Chart.defaults.color = '#334155';
+    Chart.register({
+      id:'bg',
+      beforeDraw:(chart,args,opt)=>{const {ctx}=chart;ctx.save();ctx.globalCompositeOperation='destination-over';ctx.fillStyle= opt?.color || 'rgba(0,0,0,0)';ctx.fillRect(0,0,chart.width,chart.height);ctx.restore();}
+    });
+
+    /* ─────────────────────────────────────────────────────────────────────────────
+       Inicio
+    ───────────────────────────────────────────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('year').textContent = new Date().getFullYear();
+      initFilters();
+      initKPISection();
+      initCharts();
+      document.getElementById('csvFile').addEventListener('change', handleFileUpload);
+      document.getElementById('btnResetAll').addEventListener('click', resetAll);
+      document.getElementById('btnReport').addEventListener('click', generateReport);
+      document.getElementById('btnRefresh').addEventListener('click', () => { populateFilterOptions(); applyFilters(); });
+      // manejo logo base64
+      const logoBtn = document.getElementById('btnLogoBase64');
+      const logoFile = document.getElementById('logoFile');
+      logoBtn.addEventListener('click', ()=> logoFile.click());
+      logoFile.addEventListener('change', async (e)=>{
+        const f = e.target.files[0]; if(!f) return;
+        const dataURL = await blobToDataURL(f);
+        BRAND.logoDataURI = dataURL; try{ localStorage.setItem('cotrafa_logo_base64', dataURL); }catch(err){}
+        toast('Logo incrustado para PDF');
+      });
+    });
+      initCharts();
+      document.getElementById('csvFile').addEventListener('change', handleFileUpload);
+      document.getElementById('btnResetAll').addEventListener('click', resetAll);
+      document.getElementById('btnReport').addEventListener('click', generateReport);
+      document.getElementById('btnRefresh').addEventListener('click', () => { populateFilterOptions(); applyFilters(); });
+      // manejo logo base64
+      const logoBtn = document.getElementById('btnLogoBase64');
+      const logoFile = document.getElementById('logoFile');
+      logoBtn.addEventListener('click', ()=> logoFile.click());
+      logoFile.addEventListener('change', async (e)=>{
+        const f = e.target.files[0]; if(!f) return;
+        const dataURL = await blobToDataURL(f);
+        BRAND.logoDataURI = dataURL; try{ localStorage.setItem('cotrafa_logo_base64', dataURL); }catch(err){}
+        toast('Logo incrustado para PDF');
+      });
+    });
+      initFilters();
+      initKPISection();
+      initCharts();
+      document.getElementById('csvFile').addEventListener('change', handleFileUpload);
+      document.getElementById('btnResetAll').addEventListener('click', resetAll);
+      document.getElementById('btnReport').addEventListener('click', generateReport);
+      document.getElementById('btnRefresh').addEventListener('click', () => { populateFilterOptions(); applyFilters(); });
+    });
+
+    function showLoading(show){document.getElementById('loading').style.display = show ? 'flex' : 'none'}
+
+    /* ─────────────────────────────────────────────────────────────────────────────
+       Filtros de cabecera
+    ───────────────────────────────────────────────────────────────────────────── */
+    function initFilters(){
+      const wrap = document.getElementById('filters');
+      wrap.innerHTML = '';
+      filterConfigs.forEach(cfg => {
+        const box = document.createElement('div');
+        box.className = 'filter';
+        const lab = document.createElement('label'); lab.textContent = cfg.label; box.appendChild(lab);
+        const search = document.createElement('input'); search.type='text'; search.placeholder='Buscar…'; box.appendChild(search);
+        const sel = document.createElement('select'); sel.id = 'filter-'+cfg.key; sel.multiple = true; sel.size = 6; box.appendChild(sel);
+        search.addEventListener('input', () => {
+          const term = search.value.toLowerCase();
+          Array.from(sel.options).forEach((o,i)=>{ if(i===0) return; if(o.selected) return; o.hidden = !o.textContent.toLowerCase().includes(term); });
+        });
+        sel.addEventListener('change', applyFilters);
+        wrap.appendChild(box);
+      });
+      populateFilterOptions();
     }
 
-    function drawWatermark(doc, pageW, pageH){
-      const prevColor = doc.getTextColor();
-      doc.setFontSize(48);
-      doc.setTextColor(180, 196, 210);
-      doc.text(ORG.watermark, pageW/2, pageH/2, {angle: -25, align:'center'});
-      if(prevColor) doc.setTextColor(prevColor);
+    function populateFilterOptions(){
+      filterConfigs.forEach(cfg => {
+        const sel = document.getElementById('filter-'+cfg.key);
+        if(!sel) return;
+        const vals = new Set();
+        rawData.forEach(r => { if(r[cfg.key]) vals.add(String(r[cfg.key])); });
+        const allOpt = document.createElement('option'); allOpt.value='__all__'; allOpt.textContent='(Todos)'; allOpt.selected = true;
+        sel.innerHTML=''; sel.appendChild(allOpt);
+        Array.from(vals).sort().forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+      });
     }
 
-    function drawHeader(doc){
-      const pageW = doc.internal.pageSize.getWidth();
-      const headH = 20; doc.setFillColor(0,47,90); doc.rect(0,0,pageW,headH,'F'); if(BRAND.logoDataURI){ doc.addImage(BRAND.logoDataURI,'PNG',10,3,14,14); }
-      doc.setTextColor(255,255,255); doc.setFontSize(14); doc.text('Informe Ejecutivo — Cotrafa Social', 28, 8); doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'), 28, 15);
-      doc.setFontSize(8); const info = `${ORG.nit}  •  ${ORG.email}  •  ${ORG.telefono}  •  ${ORG.web}`; const w = doc.getTextWidth(info);
-      doc.text(info, pageW - 10 - w, 15);
+    function activeChips(){
+      const chips = document.getElementById('chips'); chips.innerHTML='';
+      // chips desde selects
+      filterConfigs.forEach(cfg=>{
+        const sel = document.getElementById('filter-'+cfg.key); if(!sel) return;
+        Array.from(sel.selectedOptions).forEach(opt=>{
+          if(opt.value==='__all__') return;
+          const c = chip(`${cfg.label}: ${opt.value}`, ()=>{ opt.selected=false; applyFilters(); });
+          chips.appendChild(c);
+        });
+      });
+      // chips desde clics en gráficos
+      const map = {month:'Mes',year:'Año',categoriaEdad:'Cat. Edad',estado:'Estado',ciudad:'Ciudad',mesesSinPagarRange:'Meses sin pagar'};
+      Object.entries(chartFilterState).forEach(([k,v])=>{ if(!v) return; const c = chip(`${map[k]}: ${v}`, ()=>{ chartFilterState[k]=null; applyFilters(); }); chips.appendChild(c); });
     }
 
-    function drawKPI(doc,x,y,w,h,label,value){
-      doc.setDrawColor(215,232,246); doc.setFillColor(255,255,255); doc.roundedRect(x,y,w,h,2,2,'FD');
-      doc.setTextColor(51,65,85); doc.setFontSize(9); doc.text(label, x+4, y+6);
-      doc.setTextColor(0,51,102); doc.setFontSize(14); doc.text(String(value), x+4, y+14);
+    function chip(text,onRemove){
+      const d = document.createElement('span'); d.className='chip'; d.innerHTML = `${text} <button aria-label="Quitar">✕</button>`; d.querySelector('button').addEventListener('click', onRemove); return d;
     }
 
-    function drawChartCard(doc,x,y,w,h,cid){
-      doc.setDrawColor(215,232,246); doc.setFillColor(255,255,255); doc.roundedRect(x,y,w,h,2,2,'FD');
-      const chart = charts[cid]; if(!chart || !chart.canvas) return;
-      const img = chart.canvas.toDataURL('image/png');
-      doc.addImage(img,'PNG', x+2, y+6, w-4, h-10);
-      doc.setTextColor(51,65,85); doc.setFontSize(9); doc.text(chart.options.plugins?.title?.text || chart.canvas.getAttribute('aria-label') || '', x+4, y+4);
+    function resetAll(){
+      filterConfigs.forEach(cfg=>{ const sel = document.getElementById('filter-'+cfg.key); if(!sel) return; Array.from(sel.options).forEach((o,i)=>o.selected = (i===0)); });
+      Object.keys(chartFilterState).forEach(k=>chartFilterState[k]=null);
+      applyFilters();
     }
 
-    function addFooter(doc){
-      const pageW = doc.internal.pageSize.getWidth(); const pageH = doc.internal.pageSize.getHeight();
-      const txt = `Página ${doc.internal.getNumberOfPages()}`;
-      doc.setDrawColor(231,238,247); doc.line(12, pageH-10, pageW-12, pageH-10);
-      doc.setTextColor(71,85,105); doc.setFontSize(8); doc.text(txt, pageW-12 - doc.getTextWidth(txt), pageH-6);
+    /* ─────────────────────────────────────────────────────────────────────────────
+       Carga y normalización de datos
+    ───────────────────────────────────────────────────────────────────────────── */
+    async function handleFileUpload(e){
+      const file = e.target.files[0]; if(!file) return; showLoading(true);
+      Papa.parse(file, { header:true, skipEmptyLines:true, encoding:'UTF-8', dynamicTyping:false,
+        complete: (res)=>{ rawData = res.data.map(cleanRow); populateFilterOptions(); applyFilters(); showLoading(false); },
+        error: (err)=>{ console.error(err); showLoading(false); alert('No se pudo procesar el CSV. Verifique delimitador y UTF-8.'); }
+      });
     }
 
-    function buildInsights(){
-      const out = [];
-      const names=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-      const mCount={}; filteredData.forEach(r=>{ const m=r.MesAfiliacion? parseInt(r.MesAfiliacion,10): null; if(m) mCount[m]=(mCount[m]||0)+1; });
-      if(Object.keys(mCount).length){ const topM = Object.entries(mCount).sort((a,b)=>b[1]-a[1])[0]; out.push(`El mes con más afiliaciones fue ${names[topM[0]]} con ${formatNumber(topM[1])} registros.`); }
-      const yCount={}; filteredData.forEach(r=>{ const y=r.AnoAfiliacion; if(y) yCount[y]=(yCount[y]||0)+1; });
-      if(Object.keys(yCount).length){ const topY = Object.entries(yCount).sort((a,b)=>b[1]-a[1])[0]; out.push(`El año más activo fue ${topY[0]} con ${formatNumber(topY[1])} afiliaciones.`); }
-      const cCount={}; filteredData.forEach(r=>{ const c=r.Ciudad||'Desconocido'; cCount[c]=(cCount[c]||0)+1; });
-      if(Object.keys(cCount).length){ const topC = Object.entries(cCount).sort((a,b)=>b[1]-a[1])[0]; out.push(`La ciudad líder fue ${topC[0]} con ${formatNumber(topC[1])} afiliados.`); }
-      const ranges=[{label:'0',min:0,max:0},{label:'1-3',min:1,max:3},{label:'4-6',min:4,max:6},{label:'7-12',min:7,max:12},{label:'>12',min:13,max:Infinity}];
-      const rCount={}; ranges.forEach(r=>rCount[r.label]=0); filteredData.forEach(r=>{ const v=r.Meses_sin_pagar!==undefined? r.Meses_sin_pagar : null; if(v!==null && !isNaN(v)){ const R=ranges.find(x=>v>=x.min && v<=x.max); if(R) rCount[R.label]++; }});
-      const topR = Object.entries(rCount).sort((a,b)=>b[1]-a[1])[0]; if(topR && topR[1]>0){ out.push(`El rango más frecuente de meses sin pago es ${topR[0]} (${formatNumber(topR[1])} casos).`); }
-      out.push(`Pago promedio: ${pctPago()} • No pago promedio: ${pctNoPago()}.`);
-      if(!out.length) out.push('No hay suficientes datos filtrados para generar hallazgos.');
+    function cleanRow(row){
+      const out = {};
+      for(const k in row){ if(!row.hasOwnProperty(k)) continue; const key = String(k).trim(); let nk = key;
+        if(/^ciudad$/i.test(key)) nk='Ciudad';
+        else if(/^estado$/i.test(key)) nk='Estado';
+        else if(/^(categoria\s*edad|categoría\s*edad|categoria_edad|categoría_edad)$/i.test(key)) nk='Categoria Edad';
+        out[nk] = String(row[k] ?? '').trim();
+      }
+      if(out['Edad']) out['Edad'] = parseInt(out['Edad'],10)||0;
+      if(out['% pago']) out['PctPago'] = parseFloat(out['% pago'].replace(/[^0-9.,-]/g,'').replace(',','.'))||0;
+      if(out['% no pago']) out['PctNoPago'] = parseFloat(out['% no pago'].replace(/[^0-9.,-]/g,'').replace(',','.'))||0;
+      if(out['Cuotas pagadas']) out['CuotasPagadas'] = parseFloat(out['Cuotas pagadas'].replace(/[^0-9.,-]/g,'').replace(',','.'))||0;
+      if(out['Meses afiliado']) out['MesesAfiliado'] = parseInt(out['Meses afiliado'],10)||0;
+      if(out['Meses sin pagar']) out['Meses_sin_pagar'] = parseFloat(out['Meses sin pagar'].replace(/[^0-9.,-]/g,'').replace(',','.'))||0;
+      if(out['Año de afiliación']||out['AñoAfiliacion']||out['AnoAfiliacion']) out['AnoAfiliacion']= parseInt(out['Año de afiliación']||out['AñoAfiliacion']||out['AnoAfiliacion'],10)||null;
+      if(out['Mes de afiliación']||out['MesAfiliacion']){ let m = out['Mes de afiliación']||out['MesAfiliacion']; const map={"enero":1,"febrero":2,"marzo":3,"abril":4,"mayo":5,"junio":6,"julio":7,"agosto":8,"septiembre":9,"setiembre":9,"octubre":10,"noviembre":11,"diciembre":12}; out['MesAfiliacion']= isNaN(parseInt(m,10))? map[String(m).toLowerCase()]||null : parseInt(m,10); }
+      if(out['Categoria Edad']) out['CategoriaEdad']= out['Categoria Edad'];
+      if(out['renovacion']!==undefined) out['Renovacion']= String(out['renovacion']).toLowerCase();
       return out;
     }
 
-    function buildMethodology(){
-      const actives = [];
-      const selectSummary = [];
-      (filterConfigs||[]).forEach(cfg=>{
-        const sel = document.getElementById('filter-'+cfg.key); if(!sel) return;
-        const val = Array.from(sel.selectedOptions).map(o=>o.value).filter(v=>v!=='__all__');
-        if(val.length) selectSummary.push(`${cfg.label}: ${val.join(', ')}`);
+    /* ─────────────────────────────────────────────────────────────────────────────
+       Aplicación de filtros y KPIs
+    ───────────────────────────────────────────────────────────────────────────── */
+    function applyFilters(){
+      filteredData = rawData.filter(row => {
+        // selects
+        const okSelects = filterConfigs.every(cfg=>{
+          const sel = document.getElementById('filter-'+cfg.key); if(!sel) return true;
+          const selected = Array.from(sel.selectedOptions).map(o=>o.value);
+          if(!selected.length || selected.includes('__all__')) return true;
+          const cell = row[cfg.key]||''; return selected.some(v=>String(cell).toLowerCase()===String(v).toLowerCase());
+        });
+        // clics en gráficos
+        return okSelects && matchesChartFilters(row);
       });
-      if(selectSummary.length) actives.push('Filtros aplicados — ' + selectSummary.join(' • '));
-      const map = {month:'Mes', year:'Año', categoriaEdad:'Categoría Edad', estado:'Estado', ciudad:'Ciudad', mesesSinPagarRange:'Meses sin pagar'};
-      const clickFilters = Object.entries(chartFilterState).filter(([k,v])=>!!v).map(([k,v])=>`${map[k]}: ${v}`);
-      if(clickFilters.length) actives.push('Segmentación gráfica — ' + clickFilters.join(' • '));
-      return [
-        'Fuentes: archivo CSV cargado por el usuario (delimitado por coma o punto y coma, UTF‑8).',
-        actives.length? actives.join(' | ') : 'Sin filtros activos al momento del reporte.',
-        'Definiciones: % Pago/No Pago estimado con base en columnas PctPago/PctNoPago o, en su defecto, CuotasPagadas/MesesAfiliado.',
-        'Los gráficos se exportan desde el estado visible del dashboard (Chart.js).',
-        'El informe se genera automáticamente y está optimizado para lectura en pantalla y A4 horizontal para impresión.'
-      ];
+      activeChips();
+      updateKPIs();
+      updateCharts();
     }
 
-    function formatNumber(num,dec=0){ return Number(num||0).toLocaleString('es-CO',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
-    function formatPercentage(v){ return `${Number(v||0).toFixed(1)}%`; }
+    function matchesChartFilters(row){
+      if(chartFilterState.month){
+        const names=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        let m = row.MesAfiliacion ? parseInt(row.MesAfiliacion,10) : null; const lbl = m? (names[m]||String(m)) : null; if(!lbl || lbl.toLowerCase()!==chartFilterState.month.toLowerCase()) return false;
+      }
+      if(chartFilterState.year){ const y = row.AnoAfiliacion || null; if(!y || String(y)!==String(chartFilterState.year)) return false; }
+      if(chartFilterState.categoriaEdad){ const ce=row.CategoriaEdad||'Desconocido'; if(ce.toLowerCase()!==chartFilterState.categoriaEdad.toLowerCase()) return false; }
+      if(chartFilterState.estado){ const est=row.Estado||'Desconocido'; if(String(est).toLowerCase()!==String(chartFilterState.estado).toLowerCase()) return false; }
+      if(chartFilterState.ciudad){ const ciu=row.Ciudad||'Desconocido'; if(String(ciu).toLowerCase()!==String(chartFilterState.ciudad).toLowerCase()) return false; }
+      if(chartFilterState.mesesSinPagarRange){ const m=row.Meses_sin_pagar!==undefined? row.Meses_sin_pagar : null; let r=null; if(m!==null && !isNaN(m)){ if(m===0) r='0'; else if(m<=3) r='1-3'; else if(m<=6) r='4-6'; else if(m<=12) r='7-12'; else r='>12'; } if(!r || r!==chartFilterState.mesesSinPagarRange) return false; }
+      return true;
+    }
 
-    async function generateReport(){
+    function updateKPIs(){
+      const total = filteredData.length; setKPI('%Pago', pctPago()); setKPI('%NoPago', pctNoPago()); setKPI('Cantidad', formatNumber(total)); setKPI('Cantidad%', formatPercentage(rawData.length? (total/rawData.length*100) : 0));
+    }
+
+    function pctPago(){
+      let s=0,c=0; filteredData.forEach(r=>{ let p=r.PctPago; let np=r.PctNoPago; if(p===undefined && r.CuotasPagadas!==undefined && r.MesesAfiliado>0){ p=(r.CuotasPagadas/r.MesesAfiliado)*100; np=100-p; } if(p!==undefined){ s+=p; c++; }}); return formatPercentage(c? s/c : 0);
+    }
+    function pctNoPago(){
+      let s=0,c=0; filteredData.forEach(r=>{ let p=r.PctPago; let np=r.PctNoPago; if(np===undefined && r.CuotasPagadas!==undefined && r.MesesAfiliado>0){ p=(r.CuotasPagadas/r.MesesAfiliado)*100; np=100-p; } if(np!==undefined){ s+=np; c++; }}); return formatPercentage(c? s/c : 0);
+    }
+
+    function setKPI(name, val){ const id = 'kpi-'+name.replace(/\s+/g,''); const el = document.getElementById(id); if(el) el.textContent = val; }
+
+    function initKPISection(){
+      const root = document.getElementById('kpiSection'); root.innerHTML='';
+      const items = ['% Pago','% No Pago','Cantidad','Cantidad %'];
+      items.forEach(label=>{
+        const d=document.createElement('div'); d.className='kpi';
+        d.innerHTML = `<div class="label">${iconFor(label)} ${label}</div><div class="value" id="kpi-${label.replace(/\s+/g,'')}">-</div>`;
+        root.appendChild(d);
+      });
+    }
+
+    function iconFor(label){
+      if(label.includes('% Pago')) return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12l4 4 12-12" stroke="#2e7d32" stroke-width="2" stroke-linecap="round"/></svg>';
+      if(label.includes('% No Pago')) return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="#b42318" stroke-width="2" stroke-linecap="round"/></svg>';
+      if(label.includes('Cantidad %')) return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="#00AEEF" stroke-width="2"/><path d="M12 7v5l3 3" stroke="#00AEEF" stroke-width="2" stroke-linecap="round"/></svg>';
+      return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20h16M4 10h16M4 6h16" stroke="#003366" stroke-width="2"/></svg>';
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────────
+       Gráficos
+    ───────────────────────────────────────────────────────────────────────────── */
+    function initCharts(){
+      const chartSection = document.getElementById('chartSection'); chartSection.innerHTML='';
+      const cfgs = [
+        { id:'chartMesAfiliacion', title:'Afiliaciones por Mes', type:'bar' },
+        { id:'chartAnoAfiliacion', title:'Afiliaciones por Año', type:'bar' },
+        { id:'chartCategoriaEdad', title:'Distribución por Categoría de Edad', type:'bar' },
+        { id:'chartEstado', title:'Distribución por Estado', type:'bar' },
+        { id:'chartCiudad', title:'Distribución por Ciudad', type:'pie' },
+        { id:'chartMesesSinPagar', title:'Meses sin Pagar (rangos)', type:'bar' },
+      ];
+      cfgs.forEach(c=>{
+        const card=document.createElement('div'); card.className='card';
+        card.innerHTML = `<h3>${c.title}</h3><canvas id="${c.id}" aria-label="${c.title}"></canvas>`;
+        chartSection.appendChild(card);
+        const ctx = document.getElementById(c.id).getContext('2d');
+        charts[c.id] = new Chart(ctx, { type:c.type, data:{labels:[],datasets:[]}, options:baseChartOptions(c) });
+      });
+    }
+
+    function baseChartOptions(cfg){
+      const common = {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ display: cfg.type==='pie' }, tooltip:{enabled:true}, bg:{color:'rgba(255,255,255,0)'} },
+      };
+      if(cfg.type==='bar' || cfg.type==='line'){
+        common.scales = { x:{ ticks:{color:'#334155'}, grid:{color:'rgba(2,14,39,.06)'} }, y:{ ticks:{color:'#334155'}, grid:{color:'rgba(2,14,39,.06)'} } };
+      }
+      // Filtro por clic
+      const dim = chartDimensionMap[cfg.id];
+      if(dim){
+        common.onClick = (evt, els, chart) => {
+          const a = charts[cfg.id].getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
+          if(a && a.length){ const i=a[0].index; const label=charts[cfg.id].data.labels[i]; chartFilterState[dim] = (chartFilterState[dim]===label? null : label); applyFilters(); }
+          else { chartFilterState[dim]=null; applyFilters(); }
+        };
+      }
+      return common;
+    }
+
+    function updateCharts(){
+      chartMesAfiliacion(); chartAnoAfiliacion(); chartCategoriaEdad(); chartEstado(); chartCiudad(); chartMesesSinPagar();
+    }
+
+    function chartMesAfiliacion(){
+      const counts={}; filteredData.forEach(r=>{ let m = r.MesAfiliacion; if(!m && r.FechaAfiliacion instanceof Date && !isNaN(r.FechaAfiliacion)) m = r.FechaAfiliacion.getMonth()+1; if(m) counts[m]=(counts[m]||0)+1; });
+      const names=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+      const labels = Object.keys(counts).sort((a,b)=>a-b).map(k=>names[k]||k); const data = labels.map(l=> counts[names.indexOf(l)] || 0);
+      setBar('chartMesAfiliacion', labels, data, 'Afiliaciones', true, 'Número de Afiliaciones');
+    }
+
+    function chartAnoAfiliacion(){
+      const c={}; filteredData.forEach(r=>{ let y = r.AnoAfiliacion; if(!y && r.FechaAfiliacion instanceof Date && !isNaN(r.FechaAfiliacion)) y = r.FechaAfiliacion.getFullYear(); if(y) c[y]=(c[y]||0)+1; });
+      const labels = Object.keys(c).sort(); const data = labels.map(l=>c[l]);
+      setBar('chartAnoAfiliacion', labels, data, 'Afiliaciones', true, 'Número de Afiliaciones', 'Año');
+    }
+
+    function chartCategoriaEdad(){
+      const c={}; filteredData.forEach(r=>{ const k=r.CategoriaEdad||'Desconocido'; c[k]=(c[k]||0)+1; });
+      const labels = Object.keys(c); const data = labels.map(l=>c[l]);
+      setBar('chartCategoriaEdad', labels, data, 'Afiliados', true, 'Afiliados', 'Categoría de Edad');
+    }
+
+    function chartEstado(){
+      const c={}; filteredData.forEach(r=>{ const k=r.Estado||'Desconocido'; c[k]=(c[k]||0)+1; });
+      const labels = Object.keys(c); const data = labels.map(l=>c[l]);
+      setBar('chartEstado', labels, data, 'Afiliados', true, 'Afiliados', 'Estado');
+    }
+
+    function chartCiudad(){
+      const counts={}; filteredData.forEach(r=>{ const k=r.Ciudad||'Desconocido'; counts[k]=(counts[k]||0)+1; });
+      const entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]); const max=9; let other=0; const labels=[]; const data=[];
+      entries.forEach((e,i)=>{ if(i<max){ labels.push(e[0]); data.push(e[1]); } else other+=e[1]; }); if(other>0){ labels.push('Otros'); data.push(other); }
+      const chart = charts['chartCiudad']; chart.data.labels = labels; chart.data.datasets=[{ label:'Afiliados', data, backgroundColor: palette(labels.length), borderColor:'#fff', borderWidth:2 }]; chart.update();
+    }
+
+    function chartMesesSinPagar(){
+      const ranges=[{label:'0',min:0,max:0},{label:'1-3',min:1,max:3},{label:'4-6',min:4,max:6},{label:'7-12',min:7,max:12},{label:'>12',min:13,max:Infinity}];
+      const c={}; ranges.forEach(r=>c[r.label]=0); filteredData.forEach(r=>{ const v = r.Meses_sin_pagar!==undefined? r.Meses_sin_pagar : null; if(v!==null && !isNaN(v)){ const R = ranges.find(x=>v>=x.min && v<=x.max); if(R) c[R.label]++; }});
+      const labels = ranges.map(r=>r.label); const data = labels.map(l=>c[l]); setBar('chartMesesSinPagar', labels, data, 'Afiliados', true, 'Afiliados', 'Meses sin Pagar');
+    }
+
+    function setBar(id, labels, data, dsLabel, rounded=false, yTitle='', xTitle=''){
+      const chart = charts[id];
+      chart.data.labels = labels;
+      chart.data.datasets = [{ label: dsLabel, data, backgroundColor: palette(labels.length), borderRadius: rounded? 6 : 0, borderSkipped:false, borderColor:'rgba(255,255,255,.6)', borderWidth:1 }];
+      if(chart.options.scales){
+        chart.options.scales.y.title = { display: !!yTitle, text:yTitle, color:'#334155' };
+        chart.options.scales.x.title = { display: !!xTitle, text:xTitle, color:'#334155' };
+      }
+      chart.update();
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────────
+       Informe PDF
+    ───────────────────────────────────────────────────────────────────────────── */
+    // === Utilidades UI y funciones para PDF que estaban mal ubicadas en <head>
+function toast(msg){
+  const t = document.createElement('div'); t.textContent = msg;
+  Object.assign(t.style,{position:'fixed',bottom:'24px',right:'24px',padding:'10px 14px',background:'linear-gradient(135deg,var(--primary),var(--accent))',color:'#fff',borderRadius:'12px',boxShadow:'var(--shadow)',zIndex:9999,fontWeight:'700'});
+  document.body.appendChild(t); setTimeout(()=>t.remove(),2400);
+}
+function drawCover(doc, pageW, pageH, M){
+  doc.setFillColor(0,47,90); doc.rect(0,0,pageW,24,'F');
+  if(BRAND.logoDataURI){ doc.addImage(BRAND.logoDataURI,'PNG', M, 4, 18, 18); }
+  doc.setTextColor(255,255,255); doc.setFontSize(16); doc.text('Informe Ejecutivo — Cotrafa Social', M+22, 12);
+  doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'), M+22, 19);
+  doc.setTextColor(15,23,42); doc.setFontSize(26);
+  doc.text('Análisis Integral', pageW/2, pageH/2 - 6, {align:'center'});
+  doc.setFontSize(11); doc.setTextColor(71,85,105);
+  const sub = `${ORG.nit}  •  ${ORG.email}  •  ${ORG.telefono}  •  ${ORG.web}`;
+  doc.text(sub, pageW/2, pageH/2 + 2, {align:'center'});
+  doc.setDrawColor(0,174,239); doc.setLineWidth(0.6); doc.line(M, pageH-16, pageW-M, pageH-16);
+  doc.setFontSize(9); doc.setTextColor(0,51,102); doc.text('Confidencial — Uso interno', pageW/2, pageH-10, {align:'center'});
+}
+function drawWatermark(doc, pageW, pageH){
+  const prevColor = doc.getTextColor();
+  doc.setFontSize(48);
+  doc.setTextColor(180, 196, 210);
+  doc.text(ORG.watermark, pageW/2, pageH/2, {angle: -25, align:'center'});
+  if(prevColor) doc.setTextColor(prevColor);
+}
+function buildInsights(){
+  const out = [];
+  const names=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const mCount={}; filteredData.forEach(r=>{ const m=r.MesAfiliacion? parseInt(r.MesAfiliacion,10): null; if(m) mCount[m]=(mCount[m]||0)+1; });
+  if(Object.keys(mCount).length){ const topM = Object.entries(mCount).sort((a,b)=>b[1]-a[1])[0]; out.push(`El mes con más afiliaciones fue ${names[topM[0]]} con ${formatNumber(topM[1])} registros.`); }
+  const yCount={}; filteredData.forEach(r=>{ const y=r.AnoAfiliacion; if(y) yCount[y]=(yCount[y]||0)+1; });
+  if(Object.keys(yCount).length){ const topY = Object.entries(yCount).sort((a,b)=>b[1]-a[1])[0]; out.push(`El año más activo fue ${topY[0]} con ${formatNumber(topY[1])} afiliaciones.`); }
+  const cCount={}; filteredData.forEach(r=>{ const c=r.Ciudad||'Desconocido'; cCount[c]=(cCount[c]||0)+1; });
+  if(Object.keys(cCount).length){ const topC = Object.entries(cCount).sort((a,b)=>b[1]-a[1])[0]; out.push(`La ciudad líder fue ${topC[0]} con ${formatNumber(topC[1])} afiliados.`); }
+  const ranges=[{label:'0',min:0,max:0},{label:'1-3',min:1,max:3},{label:'4-6',min:4,max:6},{label:'7-12',min:7,max:12},{label:'>12',min:13,max:Infinity}];
+  const rCount={}; ranges.forEach(r=>rCount[r.label]=0); filteredData.forEach(r=>{ const v=r.Meses_sin_pagar!==undefined? r.Meses_sin_pagar : null; if(v!==null && !isNaN(v)){ const R=ranges.find(x=>v>=x.min && v<=x.max); if(R) rCount[R.label]++; }});
+  const topR = Object.entries(rCount).sort((a,b)=>b[1]-a[1])[0]; if(topR && topR[1]>0){ out.push(`El rango más frecuente de meses sin pago es ${topR[0]} (${formatNumber(topR[1])} casos).`); }
+  out.push(`Pago promedio: ${pctPago()} • No pago promedio: ${pctNoPago()}.`);
+  if(!out.length) out.push('No hay suficientes datos filtrados para generar hallazgos.');
+  return out;
+}
+function buildMethodology(){
+  const actives = [];
+  const selectSummary = [];
+  (filterConfigs||[]).forEach(cfg=>{
+    const sel = document.getElementById('filter-'+cfg.key); if(!sel) return;
+    const val = Array.from(sel.selectedOptions).map(o=>o.value).filter(v=>v!=='__all__');
+    if(val.length) selectSummary.push(`${cfg.label}: ${val.join(', ')}`);
+  });
+  if(selectSummary.length) actives.push('Filtros aplicados — ' + selectSummary.join(' • '));
+  const map = {month:'Mes', year:'Año', categoriaEdad:'Categoría Edad', estado:'Estado', ciudad:'Ciudad', mesesSinPagarRange:'Meses sin pagar'};
+  const clickFilters = Object.entries(chartFilterState).filter(([k,v])=>!!v).map(([k,v])=>`${map[k]}: ${v}`);
+  if(clickFilters.length) actives.push('Segmentación gráfica — ' + clickFilters.join(' • '));
+  return [
+    'Fuentes: archivo CSV cargado por el usuario (delimitado por coma o punto y coma, UTF‑8).',
+    actives.length? actives.join(' | ') : 'Sin filtros activos al momento del reporte.',
+    'Definiciones: % Pago/No Pago estimado con base en columnas PctPago/PctNoPago o, en su defecto, CuotasPagadas/MesesAfiliado.',
+    'Los gráficos se exportan desde el estado visible del dashboard (Chart.js).',
+    'El informe se genera automáticamente y está optimizado para lectura en pantalla y A4 horizontal para impresión.'
+  ];
+}
+
+async function generateReport(){
       try{
         if(!window.jspdf || !window.jspdf.jsPDF){ alert('No se pudo cargar jsPDF.'); return; }
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('l','mm','a4');
+        const doc = new jsPDF('l','mm','a4'); // Landscape A4
         const pageW = doc.internal.pageSize.getWidth();
         const pageH = doc.internal.pageSize.getHeight();
-        const M = 14;
+        const M = 14; // margen general
 
+        // ===== PORTADA =====
         drawCover(doc, pageW, pageH, M);
         drawWatermark(doc, pageW, pageH);
 
+        // ===== RESUMEN E INTRO ===== (segunda página)
         doc.addPage('a4','l');
         drawHeader(doc);
         const resumen = buildInsights();
@@ -139,8 +635,9 @@
         metodologia.forEach(line=>{ const used = doc.splitTextToSize(line, pageW - 2*M); doc.text(used, M, y); y += (used.length*4 + 1); });
         drawWatermark(doc, pageW, pageH);
 
+        // ===== KPIs =====
         const kpiY = y + 2;
-        const boxW = (pageW - 2*M - 3*6)/4;
+        const boxW = (pageW - 2*M - 3*6)/4; // 4 KPIs, gap 6
         const kpiVals = [ ['% Pago', pctPago()], ['% No Pago', pctNoPago()], ['Cantidad', formatNumber(filteredData.length)], ['Cobertura', formatPercentage(rawData.length? (filteredData.length/rawData.length*100) : 0)] ];
         for(let i=0;i<4;i++){
           const x = M + i*(boxW+6);
@@ -148,23 +645,30 @@
         }
         drawWatermark(doc, pageW, pageH);
 
-        const gW = (pageW - 2*M - 6)/2;
+        // ===== GRÁFICOS (2 x 2 por página) =====
+        const gW = (pageW - 2*M - 6)/2; // dos columnas
         const gH = 70;
         let gy = kpiY + 26;
         const chartsIds = ['chartMesAfiliacion','chartAnoAfiliacion','chartCategoriaEdad','chartEstado','chartCiudad','chartMesesSinPagar'];
         for(let i=0;i<chartsIds.length;i++){
-          if(i>0 && i%4===0){ addFooter(doc); doc.addPage('a4','l'); drawHeader(doc); gy = 28; drawWatermark(doc, pageW, pageH); }
+          if(i>0 && i%4===0){
+            addFooter(doc); doc.addPage('a4','l'); drawHeader(doc); gy = 28; drawWatermark(doc, pageW, pageH);
+          }
           const col = i%2; const row = Math.floor((i%4)/2);
           const x = M + col*(gW+6);
           const yy = gy + row*(gH+6);
           drawChartCard(doc, x, yy, gW, gH, chartsIds[i]);
           if(i%4===3){ gy += 2*(gH+6); drawWatermark(doc, pageW, pageH); }
         }
+
         addFooter(doc);
         drawWatermark(doc, pageW, pageH);
         doc.save('informe_ejecutivo.pdf');
       }catch(err){ console.error(err); alert('Error al generar el informe.'); }
+    }catch(err){ console.error(err); alert('Error al generar el informe.'); }
     }
-  </script>
-</body>
-</html>
+
+    function drawHeader(doc){
+      const pageW = doc.internal.pageSize.getWidth();
+      const headH = 20; doc.setFillColor(0,47,90); doc.rect(0,0,pageW,headH,'F'); if(BRAND.logoDataURI){ doc.addImage(BRAND.logoDataURI,'PNG',10,3,14,14); }
+      doc.setTextColor(255,255,255); doc.setFontSize(14); doc.text('Informe Ejecutivo — Cotrafa Social', 28, 8); doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'
