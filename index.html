@@ -71,7 +71,7 @@
         <h2 id="tituloCarga">Cargar datos</h2>
         <div class="file">
           <input type="file" id="csvFile" accept=".csv" aria-label="Seleccionar archivo CSV"/>
-          <div class="meta">CSV con ; o , en UTF‑8.</div>
+          <div class="meta">CSV con ; o , en UTF-8.</div>
         </div>
         <div class="chips" id="chips"></div>
       </div>
@@ -191,19 +191,56 @@
   function formatPercentage(v){ return `${Number(v||0).toFixed(1)}%`; }
   function showLoading(show){ document.getElementById('loading').style.display = show ? 'flex' : 'none'; }
 
-  // ====== PDF Ejecutivo ======
-  async function generateReport(){ try{ if(!window.jspdf||!window.jspdf.jsPDF){ alert('No se pudo cargar jsPDF.'); return; } const {jsPDF}=window.jspdf; const doc=new jsPDF('l','mm','a4'); const pageW=doc.internal.pageSize.getWidth(); const pageH=doc.internal.pageSize.getHeight(); const M=14; drawCover(doc,pageW,pageH,M); drawWatermark(doc,pageW,pageH); doc.addPage('a4','l'); drawHeader(doc); const resumen=buildInsights(); const metodologia=buildMethodology(); let y=28; doc.setTextColor(15,23,42); doc.setFontSize(14); doc.text('Resumen Ejecutivo',M,y); y+=6; doc.setFontSize(9); doc.setTextColor(51,65,85); resumen.forEach(line=>{ const used=doc.splitTextToSize('• '+line,pageW-2*M); doc.text(used,M,y); y+=(used.length*4+2); }); y+=4; doc.setTextColor(15,23,42); doc.setFontSize(12); doc.text('Nota metodológica',M,y); y+=5; doc.setFontSize(8); doc.setTextColor(71,85,105); metodologia.forEach(line=>{ const used=doc.splitTextToSize(line,pageW-2*M); doc.text(used,M,y); y+=(used.length*4+1); }); drawWatermark(doc,pageW,pageH); const kpiY=y+2; const boxW=(pageW-2*M-3*6)/4; const kpiVals=[["% Pago",pctPago()],["% No Pago",pctNoPago()],["Cantidad",formatNumber(filteredData.length)],["Cobertura",formatPercentage(rawData.length?(filteredData.length/rawData.length*100):0)]]; for(let i=0;i<4;i++){ const x=M+i*(boxW+6); drawKPI(doc,x,kpiY,boxW,20,kpiVals[i][0],kpiVals[i][1]); } drawWatermark(doc,pageW,pageH); const gW=(pageW-2*M-6)/2, gH=70; let gy=kpiY+26; const ids=['chartMesAfiliacion','chartAnoAfiliacion','chartCategoriaEdad','chartEstado','chartCiudad','chartMesesSinPagar']; for(let i=0;i<ids.length;i++){ if(i>0 && i%4===0){ addFooter(doc); doc.addPage('a4','l'); drawHeader(doc); gy=28; drawWatermark(doc,pageW,pageH);} const col=i%2, row=Math.floor((i%4)/2); const x=M+col*(gW+6); const yy=gy+row*(gH+6); drawChartCard(doc,x,yy,gW,gH,ids[i]); if(i%4===3){ gy+=2*(gH+6); drawWatermark(doc,pageW,pageH);} } addFooter(doc); drawWatermark(doc,pageW,pageH); doc.save('informe_ejecutivo.pdf'); }catch(err){ console.error(err); alert('Error al generar el informe.'); } }
-  function drawHeader(doc){ const pageW=doc.internal.pageSize.getWidth(); const headH=20; doc.setFillColor(0,47,90); doc.rect(0,0,pageW,headH,'F'); if(BRAND.logoDataURI){ doc.addImage(BRAND.logoDataURI,'PNG',10,3,14,14);} doc.setTextColor(255,255,255); doc.setFontSize(14); doc.text('Informe Ejecutivo — Cotrafa Social',28,8); doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'),28,15); const info=`${ORG.nit}  •  ${ORG.email}  •  ${ORG.telefono}  •  ${ORG.web}`; const w=doc.getTextWidth(info); doc.text(info,pageW-10-w,15); }
+  // ====== PDF Ejecutivo (CORREGIDO) ======
+  // Helpers: detectar formato de imagen y agregar de forma segura
+  function detectImageFormatFromDataURL(dataURL) {
+    if (!dataURL || typeof dataURL !== 'string') return 'PNG';
+    if (dataURL.startsWith('data:image/jpeg') || dataURL.startsWith('data:image/jpg')) return 'JPEG';
+    if (dataURL.startsWith('data:image/webp')) return 'WEBP';
+    return 'PNG';
+  }
+  function safeAddImage(doc, dataURL, x, y, w, h) {
+    if (!dataURL) return;
+    try {
+      const fmt = detectImageFormatFromDataURL(dataURL);
+      doc.addImage(dataURL, fmt, x, y, w, h);
+    } catch (e) {
+      console.warn('No se pudo incrustar una imagen en el PDF:', e);
+    }
+  }
+  function getChartImageById(cid) {
+    const chart = charts[cid];
+    if (!chart || !chart.canvas) return null;
+    try { return chart.canvas.toDataURL('image/png'); }
+    catch (e) { console.warn('No se pudo exportar el canvas a imagen:', e); return null; }
+  }
+
+  async function generateReport(){ try{ if(!window.jspdf||!window.jspdf.jsPDF){ alert('No se pudo cargar jsPDF.'); return; } const {jsPDF}=window.jspdf; const doc=new jsPDF('l','mm','a4'); const pageW=doc.internal.pageSize.getWidth(); const pageH=doc.internal.pageSize.getHeight(); const M=14; drawCover(doc,pageW,pageH,M); drawWatermark(doc,pageW,pageH); doc.addPage(); drawHeader(doc); const resumen=buildInsights(); const metodologia=buildMethodology(); let y=28; doc.setTextColor(15,23,42); doc.setFontSize(14); doc.text('Resumen Ejecutivo',M,y); y+=6; doc.setFontSize(9); doc.setTextColor(51,65,85); resumen.forEach(line=>{ const used=doc.splitTextToSize('• '+line,pageW-2*M); doc.text(used,M,y); y+=(used.length*4+2); }); y+=4; doc.setTextColor(15,23,42); doc.setFontSize(12); doc.text('Nota metodológica',M,y); y+=5; doc.setFontSize(8); doc.setTextColor(71,85,105); metodologia.forEach(line=>{ const used=doc.splitTextToSize(line,pageW-2*M); doc.text(used,M,y); y+=(used.length*4+1); }); drawWatermark(doc,pageW,pageH); const kpiY=y+2; const boxW=(pageW-2*M-3*6)/4; const kpiVals=[["% Pago",pctPago()],["% No Pago",pctNoPago()],["Cantidad",formatNumber(filteredData.length)],["Cobertura",formatPercentage(rawData.length?(filteredData.length/rawData.length*100):0)]]; for(let i=0;i<4;i++){ const x=M+i*(boxW+6); drawKPI(doc,x,kpiY,boxW,20,kpiVals[i][0],kpiVals[i][1]); } drawWatermark(doc,pageW,pageH); const gW=(pageW-2*M-6)/2, gH=70; let gy=kpiY+26; const ids=['chartMesAfiliacion','chartAnoAfiliacion','chartCategoriaEdad','chartEstado','chartCiudad','chartMesesSinPagar']; for(let i=0;i<ids.length;i++){ if(i>0 && i%4===0){ addFooter(doc); doc.addPage(); drawHeader(doc); gy=28; drawWatermark(doc,pageW,pageH);} const col=i%2, row=Math.floor((i%4)/2); const x=M+col*(gW+6); const yy=gy+row*(gH+6); drawChartCard(doc,x,yy,gW,gH,ids[i]); if(i%4===3){ gy+=2*(gH+6); drawWatermark(doc,pageW,pageH);} } addFooter(doc); drawWatermark(doc,pageW,pageH); doc.save('informe_ejecutivo.pdf'); }catch(err){ console.error(err); alert('Error al generar el informe.'); } }
+
+  // Header (usa safeAddImage)
+  function drawHeader(doc){ const pageW=doc.internal.pageSize.getWidth(); const headH=20; doc.setFillColor(0,47,90); doc.rect(0,0,pageW,headH,'F'); if(BRAND.logoDataURI){ safeAddImage(doc,BRAND.logoDataURI,10,3,14,14);} doc.setTextColor(255,255,255); doc.setFontSize(14); doc.text('Informe Ejecutivo — Cotrafa Social',28,8); doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'),28,15); const info=`${ORG.nit}  •  ${ORG.email}  •  ${ORG.telefono}  •  ${ORG.web}`; const w=doc.getTextWidth(info); doc.text(info,pageW-10-w,15); }
+
   function drawKPI(doc,x,y,w,h,label,value){ doc.setDrawColor(215,232,246); doc.setFillColor(255,255,255); doc.roundedRect(x,y,w,h,2,2,'FD'); doc.setTextColor(51,65,85); doc.setFontSize(9); doc.text(label,x+4,y+6); doc.setTextColor(0,51,102); doc.setFontSize(14); doc.text(String(value),x+4,y+14); }
-  function drawChartCard(doc,x,y,w,h,cid){ doc.setDrawColor(215,232,246); doc.setFillColor(255,255,255); doc.roundedRect(x,y,w,h,2,2,'FD'); const chart=charts[cid]; if(!chart||!chart.canvas) return; const img=chart.canvas.toDataURL('image/png'); doc.addImage(img,'PNG',x+2,y+6,w-4,h-10); doc.setTextColor(51,65,85); doc.setFontSize(9); const title=chart.canvas.getAttribute('aria-label')||''; doc.text(title,x+4,y+4); }
+
+  // Chart card (usa safeAddImage)
+  function drawChartCard(doc,x,y,w,h,cid){ doc.setDrawColor(215,232,246); doc.setFillColor(255,255,255); doc.roundedRect(x,y,w,h,2,2,'FD'); const img=getChartImageById(cid); if(img) safeAddImage(doc,img,x+2,y+6,w-4,h-10); doc.setTextColor(51,65,85); doc.setFontSize(9); const title=charts[cid] && charts[cid].canvas ? (charts[cid].canvas.getAttribute('aria-label')||'') : ''; doc.text(title,x+4,y+4); }
+
   function addFooter(doc){ const pageW=doc.internal.pageSize.getWidth(); const pageH=doc.internal.pageSize.getHeight(); const txt=`Página ${doc.internal.getNumberOfPages()}`; doc.setDrawColor(231,238,247); doc.line(12,pageH-10,pageW-12,pageH-10); doc.setTextColor(71,85,105); doc.setFontSize(8); doc.text(txt,pageW-12-doc.getTextWidth(txt),pageH-6); }
-  function drawCover(doc,pageW,pageH,M){ doc.setFillColor(0,47,90); doc.rect(0,0,pageW,24,'F'); if(BRAND.logoDataURI){ doc.addImage(BRAND.logoDataURI,'PNG',M,4,18,18);} doc.setTextColor(255,255,255); doc.setFontSize(16); doc.text('Informe Ejecutivo — Cotrafa Social',M+22,12); doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'),M+22,19); doc.setTextColor(15,23,42); doc.setFontSize(26); doc.text('Análisis Integral',pageW/2,pageH/2-6,{align:'center'}); doc.setFontSize(11); doc.setTextColor(71,85,105); const sub=`${ORG.nit}  •  ${ORG.email}  •  ${ORG.telefono}  •  ${ORG.web}`; doc.text(sub,pageW/2,pageH/2+2,{align:'center'}); doc.setDrawColor(0,174,239); doc.setLineWidth(.6); doc.line(M,pageH-16,pageW-M,pageH-16); doc.setFontSize(9); doc.setTextColor(0,51,102); doc.text('Confidencial — Uso interno',pageW/2,pageH-10,{align:'center'}); }
-  function drawWatermark(doc,pageW,pageH){ const prev=doc.getTextColor(); doc.setFontSize(48); doc.setTextColor(180,196,210); doc.text(ORG.watermark,pageW/2,pageH/2,{angle:-25,align:'center'}); if(prev) doc.setTextColor(prev); }
+
+  // Portada (solo cambié la inserción del logo a safeAddImage)
+  function drawCover(doc,pageW,pageH,M){ doc.setFillColor(0,47,90); doc.rect(0,0,pageW,24,'F'); if(BRAND.logoDataURI){ safeAddImage(doc,BRAND.logoDataURI,M,4,18,18);} doc.setTextColor(255,255,255); doc.setFontSize(16); doc.text('Informe Ejecutivo — Cotrafa Social',M+22,12); doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'),M+22,19); doc.setTextColor(15,23,42); doc.setFontSize(26); doc.text('Análisis Integral',pageW/2,pageH/2-6,{align:'center'}); doc.setFontSize(11); doc.setTextColor(71,85,105); const sub=`${ORG.nit}  •  ${ORG.email}  •  ${ORG.telefono}  •  ${ORG.web}`; doc.text(sub,pageW/2,pageH/2+2,{align:'center'}); doc.setDrawColor(0,174,239); doc.setLineWidth(.6); doc.line(M,pageH-16,pageW-M,pageH-16); doc.setFontSize(9); doc.setTextColor(0,51,102); doc.text('Confidencial — Uso interno',pageW/2,pageH-10,{align:'center'}); }
+
+  // Watermark (restaura color a un valor seguro)
+  function drawWatermark(doc,pageW,pageH){ const RESTORE={r:15,g:23,b:42}; doc.setFontSize(48); doc.setTextColor(180,196,210); doc.text(ORG.watermark,pageW/2,pageH/2,{angle:-25,align:'center'}); doc.setTextColor(RESTORE.r,RESTORE.g,RESTORE.b); }
+
+  // NUEVO: contenido mínimo para resumen y metodología
+  function buildInsights(){ const total=filteredData.length; const cobertura=rawData.length ? (total/rawData.length*100) : 0; return [ `Cobertura del análisis sobre la base cargada: ${formatPercentage(cobertura)}.`, `Promedio de pago ponderado en el subconjunto filtrado: ${pctPago()}.`, `Promedio de no pago ponderado en el subconjunto filtrado: ${pctNoPago()}.`, `Total de registros analizados con filtros actuales: ${formatNumber(total)}.` ]; }
+  function buildMethodology(){ return [ 'La información es cargada por el usuario desde un archivo CSV (UTF-8) con delimitador ; o ,.', 'Los campos son normalizados (títulos habituales como Ciudad, Estado, Categoría de Edad, Mes/Año de afiliación).', 'Los porcentajes de pago/no pago se calculan a partir de las columnas provistas o, en su defecto, a partir de cuotas pagadas y meses afiliado.', 'Los gráficos se renderizan con Chart.js y se exportan como imágenes en el informe.', 'El logotipo puede incrustarse como base64 para asegurar su disponibilidad en el PDF.' ]; }
 
   // ====== UI ======
   function toast(msg){ const t=document.createElement('div'); t.textContent=msg; Object.assign(t.style,{position:'fixed',bottom:'24px',right:'24px',padding:'10px 14px',background:'linear-gradient(135deg,var(--primary),var(--accent))',color:'#fff',borderRadius:'12px',boxShadow:'var(--shadow)',zIndex:9999,fontWeight:'700'}); document.body.appendChild(t); setTimeout(()=>t.remove(),2400); }
 
-  // ====== Helpers ======
+  // ====== Helpers (duplicados conservados para no alterar tu estructura) ======
   function showLoading(show){ document.getElementById('loading').style.display = show ? 'flex' : 'none'; }
   function formatNumber(num,dec=0){ return Number(num||0).toLocaleString('es-CO',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
   function formatPercentage(v){ return `${Number(v||0).toFixed(1)}%`; }
