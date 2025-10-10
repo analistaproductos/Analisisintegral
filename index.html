@@ -105,7 +105,7 @@
   <script>
   // ====== Marca & Organización ======
   const BRAND = { logoURL:'https://cotrafasocial.com/wp-content/uploads/2023/09/logo-cotrafasocial.png', logoDataURI:null };
-  const ORG = { nombre:'Cotrafa Social', nit:'NIT 811.017.024-3', email:'info@cotrafasocial.com.co', telefono:'+57 (604) 456 70 00', web:'https://cotrafasocial.com.co', watermark:'COTRAFA SOCIAL — CONFIDENCIAL' };
+  const ORG = { nombre:'Cotrafa Social', nit:'NIT 811.017.024-3', email:'info@cotrafasocial.com.co', telefono:'+57 (604) 456 70 00', web:'https://www.cotrafasocial.com.co', watermark:'COTRAFA SOCIAL — CONFIDENCIAL' };
   (function(){ try{const s=localStorage.getItem('cotrafa_logo_base64'); if(s) BRAND.logoDataURI=s;}catch(e){} preloadLogo(); })();
   async function preloadLogo(){ if(BRAND.logoDataURI) return; try{ const r=await fetch(BRAND.logoURL,{mode:'cors'}); const b=await r.blob(); BRAND.logoDataURI=await blobToDataURL(b);}catch(e){} }
   function blobToDataURL(blob){ return new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(blob); }); }
