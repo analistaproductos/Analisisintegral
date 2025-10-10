@@ -193,25 +193,94 @@
 
   // ====== PDF Ejecutivo ======
   async function generateReport(){ try{ if(!window.jspdf||!window.jspdf.jsPDF){ alert('No se pudo cargar jsPDF.'); return; } const {jsPDF}=window.jspdf; const doc=new jsPDF('l','mm','a4'); const pageW=doc.internal.pageSize.getWidth(); const pageH=doc.internal.pageSize.getHeight(); const M=14; drawCover(doc,pageW,pageH,M); drawWatermark(doc,pageW,pageH); doc.addPage('a4','l'); drawHeader(doc); const resumen=buildInsights(); let y=28; doc.setTextColor(15,23,42); doc.setFontSize(14); doc.text('Resumen Ejecutivo',M,y); y+=6; doc.setFontSize(9); doc.setTextColor(51,65,85); resumen.forEach(line=>{ const used=doc.splitTextToSize('• '+line,pageW-2*M); doc.text(used,M,y); y+=(used.length*4+2); }); y+=6; const kpiY=y+2; const boxW=(pageW-2*M-3*6)/4; const kpiVals=[["% Pago",pctPago()],["% No Pago",pctNoPago()],["Cantidad",formatNumber(filteredData.length)],["Cobertura",formatPercentage(rawData.length?(filteredData.length/rawData.length*100):0)]]; for(let i=0;i<4;i++){ const x=M+i*(boxW+6); drawKPI(doc,x,kpiY,boxW,20,kpiVals[i][0],kpiVals[i][1]); }
-    // Página(s) de gráficas: sin marca de agua y con alto dinámico para evitar cortes
+    // Páginas de gráficas: 1 por página, ancho completo para máxima legibilidad
     addFooter(doc); doc.addPage('a4','l'); drawHeader(doc);
-    const interGap=6; const chartTopY=28; const footerReserve=18;
-    const gW=(pageW-2*M-interGap)/2; const gH=Math.floor((pageH-chartTopY-footerReserve-interGap)/2);
-    let gy=chartTopY; const ids=['chartMesAfiliacion','chartAnoAfiliacion','chartCategoriaEdad','chartEstado','chartCiudad','chartMesesSinPagar'];
+    const interGap=8; const titleY=24; const chartTopY=titleY+10; const footerReserve=18;
+    const gW=(pageW-2*M); const gH=(pageH-chartTopY-footerReserve);
+    const ids=['chartMesAfiliacion','chartAnoAfiliacion','chartCategoriaEdad','chartEstado','chartCiudad','chartMesesSinPagar'];
     for(let i=0;i<ids.length;i++){
-      if(i>0 && i%4===0){ addFooter(doc); doc.addPage('a4','l'); drawHeader(doc); gy=chartTopY; }
-      const col=i%2, row=Math.floor((i%4)/2);
-      const x=M+col*(gW+interGap); const yy=gy+row*(gH+interGap);
+      if(i>0){ addFooter(doc); doc.addPage('a4','l'); drawHeader(doc); }
+      const chartTitle = getChartTitle(ids[i]);
+      sectionTitle(doc, chartTitle || 'Gráfica', M, titleY);
+      const filtersText = getActiveFiltersText();
+      if(filtersText){ doc.setTextColor(71,85,105); doc.setFontSize(8); doc.text(filtersText, M, titleY+5); }
+      const x=M; const yy=chartTopY;
       drawChartCard(doc,x,yy,gW,gH,ids[i]);
-      if(i%4===3){ gy+=2*(gH+interGap); }
     }
     addFooter(doc); downloadPDF(doc,'informe_ejecutivo.pdf'); }catch(err){ console.error(err); alert('Error al generar el informe.'); } }
   function drawHeader(doc){ const pageW=doc.internal.pageSize.getWidth(); const headH=20; doc.setFillColor(0,47,90); doc.rect(0,0,pageW,headH,'F'); if(BRAND.logoDataURI){ doc.addImage(BRAND.logoDataURI,'PNG',10,3,14,14);} doc.setTextColor(255,255,255); doc.setFontSize(14); doc.text('Informe Ejecutivo — Cotrafa Social',28,8); doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'),28,15); const info=`${ORG.nit}  •  ${ORG.email}  •  ${ORG.telefono}  •  ${ORG.web}`; const w=doc.getTextWidth(info); doc.text(info,pageW-10-w,15); }
   function drawKPI(doc,x,y,w,h,label,value){ doc.setDrawColor(215,232,246); doc.setFillColor(255,255,255); doc.roundedRect(x,y,w,h,2,2,'FD'); doc.setTextColor(51,65,85); doc.setFontSize(9); doc.text(label,x+4,y+6); doc.setTextColor(0,51,102); doc.setFontSize(14); doc.text(String(value),x+4,y+14); }
-  function drawChartCard(doc,x,y,w,h,cid){ doc.setDrawColor(215,232,246); doc.setFillColor(255,255,255); doc.roundedRect(x,y,w,h,2,2,'FD'); const chart=charts[cid]; if(!chart||!chart.canvas) return; const img=chart.canvas.toDataURL('image/png'); doc.addImage(img,'PNG',x+2,y+6,w-4,h-10); doc.setTextColor(51,65,85); doc.setFontSize(9); const title=chart.canvas.getAttribute('aria-label')||''; doc.text(title,x+4,y+4); }
+  function drawChartCard(doc,x,y,w,h,cid){
+    doc.setDrawColor(215,232,246); doc.setFillColor(255,255,255);
+    doc.roundedRect(x,y,w,h,2,2,'FD');
+    const chart=charts[cid]; if(!chart||!chart.canvas) return;
+    const img=captureChartImage(cid, w-8, h-18) || chart.canvas.toDataURL('image/png');
+    const innerX=x+4, innerY=y+12, innerW=w-8, innerH=h-18;
+    // Ajustar por relación de aspecto usando metadatos reales de la imagen
+    let drawW=innerW, drawH=innerH, offX=innerX, offY=innerY;
+    try{
+      const props = doc.getImageProperties(img);
+      const imgRatio = props.width / props.height;
+      const boxRatio = innerW / innerH;
+      if (imgRatio > boxRatio){
+        drawW = innerW; drawH = innerW / imgRatio;
+      } else {
+        drawH = innerH; drawW = innerH * imgRatio;
+      }
+      offX = innerX + (innerW - drawW) / 2;
+      offY = innerY + (innerH - drawH) / 2;
+    }catch(_){ /* si falla, usamos innerW/innerH */ }
+    doc.addImage(img,'PNG',offX,offY,drawW,drawH);
+    doc.setTextColor(51,65,85); doc.setFontSize(10);
+    const title=chart.canvas.getAttribute('aria-label')||'';
+    doc.text(title,x+6,y+8);
+  }
   function addFooter(doc){ const pageW=doc.internal.pageSize.getWidth(); const pageH=doc.internal.pageSize.getHeight(); const txt=`Página ${doc.internal.getNumberOfPages()}`; doc.setDrawColor(231,238,247); doc.line(12,pageH-10,pageW-12,pageH-10); doc.setTextColor(71,85,105); doc.setFontSize(8); doc.text(txt,pageW-12-doc.getTextWidth(txt),pageH-6); }
   function drawCover(doc,pageW,pageH,M){ doc.setFillColor(0,47,90); doc.rect(0,0,pageW,24,'F'); if(BRAND.logoDataURI){ doc.addImage(BRAND.logoDataURI,'PNG',M,4,18,18);} doc.setTextColor(255,255,255); doc.setFontSize(16); doc.text('Informe Ejecutivo — Cotrafa Social',M+22,12); doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'),M+22,19); doc.setTextColor(15,23,42); doc.setFontSize(26); doc.text('Análisis Integral',pageW/2,pageH/2-6,{align:'center'}); doc.setFontSize(11); doc.setTextColor(71,85,105); const sub=`${ORG.nit}  •  ${ORG.email}  •  ${ORG.telefono}  •  ${ORG.web}`; doc.text(sub,pageW/2,pageH/2+2,{align:'center'}); doc.setDrawColor(0,174,239); doc.setLineWidth(.6); doc.line(M,pageH-16,pageW-M,pageH-16); doc.setFontSize(9); doc.setTextColor(0,51,102); doc.text('Confidencial — Uso interno',pageW/2,pageH-10,{align:'center'}); }
   function drawWatermark(doc,pageW,pageH){ const prev=doc.getTextColor(); doc.setFontSize(48); doc.setTextColor(180,196,210); doc.text(ORG.watermark,pageW/2,pageH/2,{angle:-25,align:'center'}); if(prev) doc.setTextColor(prev); }
+
+  // ====== PDF helpers ======
+  function sectionTitle(doc, title, x, y){ doc.setTextColor(15,23,42); doc.setFontSize(12); doc.text(String(title||''), x, y); }
+  function getChartTitle(cid){ const chart=charts[cid]; return chart && chart.canvas ? chart.canvas.getAttribute('aria-label')||'' : ''; }
+  function getActiveFiltersText(){
+    const parts=[];
+    try{
+      // Select-based filters
+      const map=[['Ciudad','Ciudad'],['Estado','Estado'],['CategoriaEdad','Categoría Edad']];
+      map.forEach(([key,label])=>{ const sel=document.getElementById('filter-'+key); if(!sel) return; const vals=Array.from(sel.selectedOptions).map(o=>o.value).filter(v=>v!=='__all__'); if(vals.length) parts.push(`${label}: ${vals.join(', ')}`); });
+      // Chart click filters
+      const names={month:'Mes',year:'Año',categoriaEdad:'Cat. Edad',estado:'Estado',ciudad:'Ciudad',mesesSinPagarRange:'Meses sin pagar'};
+      Object.entries(chartFilterState).forEach(([k,v])=>{ if(v) parts.push(`${names[k]}: ${v}`); });
+    }catch(_){}
+    return parts.length? `Filtros: ${parts.join('  •  ')}` : '';
+  }
+  function captureChartImage(cid, widthMm, heightMm){
+    try{
+      const chart=charts[cid]; if(!chart||!chart.canvas) return null;
+      const canvas=chart.canvas;
+      const origW=canvas.width, origH=canvas.height;
+      const PX_PER_MM=3.78; // ~96 DPI
+      const targetW=Math.max(600, Math.floor(widthMm*PX_PER_MM));
+      const targetH=Math.max(400, Math.floor(heightMm*PX_PER_MM));
+      chart.resize(targetW, targetH);
+      chart.update();
+      const dataURL=canvas.toDataURL('image/png');
+      chart.resize(origW, origH);
+      chart.update();
+      return dataURL;
+    }catch(_){ return null; }
+  }
+
+  // ====== Executive summary helpers ======
+  function buildInsights(){
+    const insights=[];
+    insights.push(`Pago promedio: ${pctPago()}`);
+    insights.push(`No pago promedio: ${pctNoPago()}`);
+    insights.push(`Cantidad filtrada: ${formatNumber(filteredData.length)}`);
+    const cobertura = rawData.length ? (filteredData.length/rawData.length*100) : 0;
+    insights.push(`Cobertura del conjunto: ${formatPercentage(cobertura)}`);
+    return insights;
+  }
 
   // Descarga robusta del PDF (evita bloqueos de pop‑up y funciona cross‑browser)
   function downloadPDF(doc, filename){
