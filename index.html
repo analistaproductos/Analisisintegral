@@ -208,12 +208,37 @@
       console.warn('No se pudo incrustar una imagen en el PDF:', e);
     }
   }
-  function getChartImageById(cid) {
-    const chart = charts[cid];
-    if (!chart || !chart.canvas) return null;
-    try { return chart.canvas.toDataURL('image/png'); }
-    catch (e) { console.warn('No se pudo exportar el canvas a imagen:', e); return null; }
+function getChartImageById(cid) {
+  const chart = charts[cid];
+  if (!chart || !chart.canvas) return null;
+  try { 
+    // Mejorar la calidad de exportación
+    const originalWidth = chart.canvas.width;
+    const originalHeight = chart.canvas.height;
+    
+    // Crear un canvas temporal con mayor resolución para PDF
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    const scale = 2; // Factor de escala para mejor calidad
+    
+    tempCanvas.width = originalWidth * scale;
+    tempCanvas.height = originalHeight * scale;
+    
+    // Configurar el contexto para alta calidad
+    tempCtx.imageSmoothingEnabled = true;
+    tempCtx.imageSmoothingQuality = 'high';
+    
+    // Dibujar el chart escalado
+    tempCtx.scale(scale, scale);
+    tempCtx.drawImage(chart.canvas, 0, 0);
+    
+    return tempCanvas.toDataURL('image/png', 1.0);
   }
+  catch (e) { 
+    console.warn('No se pudo exportar el canvas a imagen:', e); 
+    return null; 
+  }
+}
 
   async function generateReport(){ try{ if(!window.jspdf||!window.jspdf.jsPDF){ alert('No se pudo cargar jsPDF.'); return; } const {jsPDF}=window.jspdf; const doc=new jsPDF('l','mm','a4'); const pageW=doc.internal.pageSize.getWidth(); const pageH=doc.internal.pageSize.getHeight(); const M=14; drawCover(doc,pageW,pageH,M); drawWatermark(doc,pageW,pageH); doc.addPage(); drawHeader(doc); const resumen=buildInsights(); const metodologia=buildMethodology(); let y=28; doc.setTextColor(15,23,42); doc.setFontSize(14); doc.text('Resumen Ejecutivo',M,y); y+=6; doc.setFontSize(9); doc.setTextColor(51,65,85); resumen.forEach(line=>{ const used=doc.splitTextToSize('• '+line,pageW-2*M); doc.text(used,M,y); y+=(used.length*4+2); }); y+=4; doc.setTextColor(15,23,42); doc.setFontSize(12); doc.text('Nota metodológica',M,y); y+=5; doc.setFontSize(8); doc.setTextColor(71,85,105); metodologia.forEach(line=>{ const used=doc.splitTextToSize(line,pageW-2*M); doc.text(used,M,y); y+=(used.length*4+1); }); drawWatermark(doc,pageW,pageH); const kpiY=y+2; const boxW=(pageW-2*M-3*6)/4; const kpiVals=[["% Pago",pctPago()],["% No Pago",pctNoPago()],["Cantidad",formatNumber(filteredData.length)],["Cobertura",formatPercentage(rawData.length?(filteredData.length/rawData.length*100):0)]]; for(let i=0;i<4;i++){ const x=M+i*(boxW+6); drawKPI(doc,x,kpiY,boxW,20,kpiVals[i][0],kpiVals[i][1]); } drawWatermark(doc,pageW,pageH); const gW=(pageW-2*M-6)/2, gH=70; let gy=kpiY+26; const ids=['chartMesAfiliacion','chartAnoAfiliacion','chartCategoriaEdad','chartEstado','chartCiudad','chartMesesSinPagar']; for(let i=0;i<ids.length;i++){ if(i>0 && i%4===0){ addFooter(doc); doc.addPage(); drawHeader(doc); gy=28; drawWatermark(doc,pageW,pageH);} const col=i%2, row=Math.floor((i%4)/2); const x=M+col*(gW+6); const yy=gy+row*(gH+6); drawChartCard(doc,x,yy,gW,gH,ids[i]); if(i%4===3){ gy+=2*(gH+6); drawWatermark(doc,pageW,pageH);} } addFooter(doc); drawWatermark(doc,pageW,pageH); doc.save('informe_ejecutivo.pdf'); }catch(err){ console.error(err); alert('Error al generar el informe.'); } }
 
