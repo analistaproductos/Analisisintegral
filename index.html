@@ -59,6 +59,7 @@
       <div class="actions">
         <button class="btn btn-outline" id="btnResetAll" title="Limpiar filtros">🧹 Limpiar</button>
         <button class="btn btn-outline" id="btnLogoBase64" title="Fijar logo en PDF (base64)">🖼️ Logo en PDF</button>
+        <button class="btn btn-outline" id="btnOrg" title="Editar datos de la organización">🏷️ Datos</button>
         <button class="btn btn-primary" id="btnReport" title="Descargar informe ejecutivo">📄 Informe PDF</button>
       </div>
     </div>
@@ -106,7 +107,17 @@
   // ====== Marca & Organización ======
   const BRAND = { logoURL:'https://cotrafasocial.com/wp-content/uploads/2023/09/logo-cotrafasocial.png', logoDataURI:null };
   const ORG = { nombre:'Cotrafa Social', nit:'NIT 000.000.000-0', email:'contacto@cotrafasocial.com', telefono:'+57 (000) 000 00 00', web:'https://cotrafasocial.com', watermark:'COTRAFA SOCIAL — CONFIDENCIAL' };
-  (function(){ try{const s=localStorage.getItem('cotrafa_logo_base64'); if(s) BRAND.logoDataURI=s;}catch(e){} preloadLogo(); })();
+  (function(){ try{
+    const s=localStorage.getItem('cotrafa_logo_base64'); if(s) BRAND.logoDataURI=s;
+    const o=localStorage.getItem('cotrafa_org_info');
+    if(o){ const parsed=JSON.parse(o); if(parsed && typeof parsed==='object'){
+      ORG.nombre=parsed.nombre||ORG.nombre;
+      ORG.nit=parsed.nit||ORG.nit;
+      ORG.email=parsed.email||ORG.email;
+      ORG.telefono=parsed.telefono||ORG.telefono;
+      ORG.web=parsed.web||ORG.web;
+    }}
+  }catch(e){} preloadLogo(); })();
   async function preloadLogo(){ if(BRAND.logoDataURI) return; try{ const r=await fetch(BRAND.logoURL,{mode:'cors'}); const b=await r.blob(); BRAND.logoDataURI=await blobToDataURL(b);}catch(e){} }
   function blobToDataURL(blob){ return new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(blob); }); }
 
@@ -123,6 +134,7 @@
     initFilters(); initKPISection(); initCharts();
     document.getElementById('csvFile').addEventListener('change',handleFileUpload);
     document.getElementById('btnResetAll').addEventListener('click',resetAll);
+    document.getElementById('btnOrg').addEventListener('click',editOrg);
     document.getElementById('btnReport').addEventListener('click',generateReport);
     document.getElementById('btnRefresh').addEventListener('click',()=>{populateFilterOptions(); applyFilters();});
     const logoBtn=document.getElementById('btnLogoBase64'); const logoFile=document.getElementById('logoFile');
@@ -208,7 +220,7 @@
       drawChartCard(doc,x,yy,gW,gH,ids[i]);
     }
     addFooter(doc); downloadPDF(doc,'informe_ejecutivo.pdf'); }catch(err){ console.error(err); alert('Error al generar el informe.'); } }
-  function drawHeader(doc){ const pageW=doc.internal.pageSize.getWidth(); const headH=20; doc.setFillColor(0,47,90); doc.rect(0,0,pageW,headH,'F'); if(BRAND.logoDataURI){ doc.addImage(BRAND.logoDataURI,'PNG',10,3,14,14);} doc.setTextColor(255,255,255); doc.setFontSize(14); doc.text('Informe Ejecutivo — Cotrafa Social',28,8); doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'),28,15); const info=`${ORG.nit}  •  ${ORG.email}  •  ${ORG.telefono}  •  ${ORG.web}`; const w=doc.getTextWidth(info); doc.text(info,pageW-10-w,15); }
+  function drawHeader(doc){ const pageW=doc.internal.pageSize.getWidth(); const headH=20; doc.setFillColor(0,47,90); doc.rect(0,0,pageW,headH,'F'); if(BRAND.logoDataURI){ doc.addImage(BRAND.logoDataURI,'PNG',10,3,14,14);} doc.setTextColor(255,255,255); doc.setFontSize(14); doc.text('Informe Ejecutivo — Cotrafa Social',28,8); doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'),28,15); drawContactInfoRight(doc, pageW-10, 15, true); }
   function drawKPI(doc,x,y,w,h,label,value){ doc.setDrawColor(215,232,246); doc.setFillColor(255,255,255); doc.roundedRect(x,y,w,h,2,2,'FD'); doc.setTextColor(51,65,85); doc.setFontSize(9); doc.text(label,x+4,y+6); doc.setTextColor(0,51,102); doc.setFontSize(14); doc.text(String(value),x+4,y+14); }
   function drawChartCard(doc,x,y,w,h,cid){
     doc.setDrawColor(215,232,246); doc.setFillColor(255,255,255);
@@ -236,12 +248,59 @@
     doc.text(title,x+6,y+8);
   }
   function addFooter(doc){ const pageW=doc.internal.pageSize.getWidth(); const pageH=doc.internal.pageSize.getHeight(); const txt=`Página ${doc.internal.getNumberOfPages()}`; doc.setDrawColor(231,238,247); doc.line(12,pageH-10,pageW-12,pageH-10); doc.setTextColor(71,85,105); doc.setFontSize(8); doc.text(txt,pageW-12-doc.getTextWidth(txt),pageH-6); }
-  function drawCover(doc,pageW,pageH,M){ doc.setFillColor(0,47,90); doc.rect(0,0,pageW,24,'F'); if(BRAND.logoDataURI){ doc.addImage(BRAND.logoDataURI,'PNG',M,4,18,18);} doc.setTextColor(255,255,255); doc.setFontSize(16); doc.text('Informe Ejecutivo — Cotrafa Social',M+22,12); doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'),M+22,19); doc.setTextColor(15,23,42); doc.setFontSize(26); doc.text('Análisis Integral',pageW/2,pageH/2-6,{align:'center'}); doc.setFontSize(11); doc.setTextColor(71,85,105); const sub=`${ORG.nit}  •  ${ORG.email}  •  ${ORG.telefono}  •  ${ORG.web}`; doc.text(sub,pageW/2,pageH/2+2,{align:'center'}); doc.setDrawColor(0,174,239); doc.setLineWidth(.6); doc.line(M,pageH-16,pageW-M,pageH-16); doc.setFontSize(9); doc.setTextColor(0,51,102); doc.text('Confidencial — Uso interno',pageW/2,pageH-10,{align:'center'}); }
+  function drawCover(doc,pageW,pageH,M){ doc.setFillColor(0,47,90); doc.rect(0,0,pageW,24,'F'); if(BRAND.logoDataURI){ doc.addImage(BRAND.logoDataURI,'PNG',M,4,18,18);} doc.setTextColor(255,255,255); doc.setFontSize(16); doc.text('Informe Ejecutivo — Cotrafa Social',M+22,12); doc.setFontSize(9); doc.text(new Date().toLocaleString('es-CO'),M+22,19); doc.setTextColor(15,23,42); doc.setFontSize(26); doc.text('Análisis Integral',pageW/2,pageH/2-6,{align:'center'}); doc.setFontSize(11); doc.setTextColor(71,85,105); drawContactInfoCenter(doc, pageW/2, pageH/2+2); doc.setDrawColor(0,174,239); doc.setLineWidth(.6); doc.line(M,pageH-16,pageW-M,pageH-16); doc.setFontSize(9); doc.setTextColor(0,51,102); doc.text('Confidencial — Uso interno',pageW/2,pageH-10,{align:'center'}); }
   function drawWatermark(doc,pageW,pageH){ const prev=doc.getTextColor(); doc.setFontSize(48); doc.setTextColor(180,196,210); doc.text(ORG.watermark,pageW/2,pageH/2,{angle:-25,align:'center'}); if(prev) doc.setTextColor(prev); }
 
   // ====== PDF helpers ======
   function sectionTitle(doc, title, x, y){ doc.setTextColor(15,23,42); doc.setFontSize(12); doc.text(String(title||''), x, y); }
   function getChartTitle(cid){ const chart=charts[cid]; return chart && chart.canvas ? chart.canvas.getAttribute('aria-label')||'' : ''; }
+  function drawContactInfoRight(doc, xRight, y, onHeader=false){
+    const dot='  •  ';
+    const nit=ORG.nit||''; const email=ORG.email||''; const tel=ORG.telefono||''; const web=ORG.web||'';
+    const wNit=doc.getTextWidth(nit), wDot=doc.getTextWidth(dot), wEmail=doc.getTextWidth(email), wTel=doc.getTextWidth(tel), wWeb=doc.getTextWidth(web);
+    let x = xRight - (wNit + wDot + wEmail + wDot + wTel + wDot + wWeb);
+    const color = onHeader ? [255,255,255] : [71,85,105];
+    doc.setTextColor(...color); doc.setFontSize(9);
+    doc.text(nit, x, y); x += wNit; doc.text(dot, x, y); x += wDot;
+    doc.text(email, x, y); doc.link(x, y-4, wEmail, 6, { url: `mailto:${email}` }); x += wEmail; doc.text(dot, x, y); x += wDot;
+    const telHref = `tel:${String(tel).replace(/[^0-9+]/g,'')}`;
+    doc.text(tel, x, y); doc.link(x, y-4, wTel, 6, { url: telHref }); x += wTel; doc.text(dot, x, y); x += wDot;
+    doc.text(web, x, y); doc.link(x, y-4, wWeb, 6, { url: web });
+  }
+  function drawContactInfoCenter(doc, xCenter, y){
+    const dot='  •  ';
+    const nit=ORG.nit||''; const email=ORG.email||''; const tel=ORG.telefono||''; const web=ORG.web||'';
+    const parts=[nit, dot, email, dot, tel, dot, web];
+    const widths=parts.map(p=>doc.getTextWidth(p));
+    const total=widths.reduce((a,b)=>a+b,0);
+    let x = xCenter - total/2;
+    doc.setTextColor(71,85,105); doc.setFontSize(11);
+    for(let i=0;i<parts.length;i++){
+      const text=parts[i], w=widths[i];
+      doc.text(text, x, y);
+      if(i===2){ doc.link(x, y-5, w, 8, { url: `mailto:${email}` }); }
+      if(i===4){ doc.link(x, y-5, w, 8, { url: `tel:${String(tel).replace(/[^0-9+]/g,'')}` }); }
+      if(i===6){ doc.link(x, y-5, w, 8, { url: web }); }
+      x += w;
+    }
+  }
+
+  function editOrg(){
+    try{
+      const nombre = prompt('Nombre de la organización:', ORG.nombre||'')?.trim();
+      if(nombre!==undefined && nombre!==null && nombre!=='') ORG.nombre=nombre;
+      const nit = prompt('NIT:', ORG.nit||'')?.trim();
+      if(nit!==undefined && nit!==null && nit!=='') ORG.nit=nit;
+      const email = prompt('Correo electrónico:', ORG.email||'')?.trim();
+      if(email!==undefined && email!==null && email!=='') ORG.email=email;
+      const tel = prompt('Teléfono:', ORG.telefono||'')?.trim();
+      if(tel!==undefined && tel!==null && tel!=='') ORG.telefono=tel;
+      const web = prompt('Página web:', ORG.web||'')?.trim();
+      if(web!==undefined && web!==null && web!=='') ORG.web=web;
+      try{ localStorage.setItem('cotrafa_org_info', JSON.stringify({ nombre: ORG.nombre, nit: ORG.nit, email: ORG.email, telefono: ORG.telefono, web: ORG.web })); }catch(_){ }
+      toast('Datos de organización actualizados');
+    }catch(_){ alert('No se pudieron actualizar los datos de la organización.'); }
+  }
   function getActiveFiltersText(){
     const parts=[];
     try{
